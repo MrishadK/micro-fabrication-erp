@@ -70,3 +70,8 @@ ios/Runner/GoogleService-Info.plist
 # Temp scratch files
 DatabaseHelper.java
 OpenFabManager.bat
+
+# Installer output & debug symbols
+dist/
+*.symbols
+

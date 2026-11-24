@@ -276,9 +276,7 @@ class _WindowsAppRootState extends State<WindowsAppRoot> {
 
     // 🔒 6-Digit App Lock Screen (Secure Desktop Protection)
     if (_isLocked) {
-      return PinLockScreen(
-        onUnlocked: () => setState(() => _isLocked = false),
-      );
+      return PinLockScreen(onUnlocked: () => setState(() => _isLocked = false));
     }
 
     if (_showWelcome) {
@@ -338,7 +336,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
             children: [
               Image.asset('assets/app.png', width: 72, height: 72),
               const SizedBox(height: 24),
-              const CircularProgressIndicator(color: Color(0xFFFF6D00), strokeWidth: 2.5),
+              const CircularProgressIndicator(
+                color: Color(0xFFFF6D00),
+                strokeWidth: 2.5,
+              ),
             ],
           ),
         ),
@@ -347,9 +348,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
     // 2. 6-Digit PIN App Lock Screen
     if (_isLocked) {
-      return PinLockScreen(
-        onUnlocked: () => setState(() => _isLocked = false),
-      );
+      return PinLockScreen(onUnlocked: () => setState(() => _isLocked = false));
     }
 
     // 3. First-time setup
