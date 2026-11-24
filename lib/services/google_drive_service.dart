@@ -183,6 +183,7 @@ class GoogleDriveService {
             throw 'Could not launch Google Sign-In URL: $url';
           }
         },
+        customPostAuthPage: _buildPostAuthHtml(),
       );
 
       _desktopAuthClient = client;
@@ -528,5 +529,255 @@ class GoogleDriveService {
     } catch (e) {
       debugPrint("Failed to clean up old backups: $e");
     }
+  }
+
+  /// Custom high-polish HTML page served to the browser upon successful Google OAuth authorization
+  static String _buildPostAuthHtml() {
+    return '''<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connected to Google Drive • Micro</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0B132B 0%, #1C2541 50%, #1A237E 100%);
+      color: #1E293B;
+      padding: 24px;
+    }
+    .card {
+      background: #FFFFFF;
+      border-radius: 24px;
+      padding: 44px 36px;
+      max-width: 480px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.1);
+      text-align: center;
+      animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      background: #1A237E;
+      color: #FFFFFF;
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 1.2px;
+      padding: 6px 12px;
+      border-radius: 8px;
+    }
+    .workstation-badge {
+      background: #FFF3E0;
+      color: #E65100;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: 1px solid #FFE082;
+    }
+    .icon-wrapper {
+      position: relative;
+      width: 76px;
+      height: 76px;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icon-glow {
+      position: absolute;
+      inset: -6px;
+      background: rgba(16, 185, 129, 0.18);
+      border-radius: 50%;
+      animation: pulse 2s infinite ease-in-out;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(0.95); opacity: 0.7; }
+      50% { transform: scale(1.08); opacity: 1; }
+    }
+    .icon-circle {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.35);
+    }
+    .icon-circle svg {
+      width: 36px;
+      height: 36px;
+      fill: none;
+      stroke: #FFFFFF;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0F172A;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #64748B;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .info-box {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      padding: 8px 0;
+    }
+    .info-row:not(:last-child) {
+      border-bottom: 1px dashed #E2E8F0;
+    }
+    .info-label {
+      color: #64748B;
+      font-weight: 500;
+    }
+    .info-value {
+      color: #0F172A;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      background: #10B981;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, #1A237E 0%, #283593 100%);
+      color: #FFFFFF;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(26, 35, 126, 0.25);
+      transition: all 0.2s ease;
+    }
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(26, 35, 126, 0.35);
+      background: linear-gradient(135deg, #0D1757 0%, #1A237E 100%);
+    }
+    .countdown-text {
+      margin-top: 14px;
+      font-size: 11px;
+      color: #94A3B8;
+    }
+    .footer-text {
+      margin-top: 20px;
+      font-size: 11px;
+      color: #94A3B8;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand-row">
+      <span class="brand-badge">MICRO</span>
+      <span class="workstation-badge">DESKTOP WORKSTATION</span>
+    </div>
+
+    <div class="icon-wrapper">
+      <div class="icon-glow"></div>
+      <div class="icon-circle">
+        <svg viewBox="0 0 24 24">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+      </div>
+    </div>
+
+    <h1>Google Drive Connected!</h1>
+    <p class="subtitle">Your desktop workstation is now linked to your Google Account. Cloud backup and multi-device sync are ready.</p>
+
+    <div class="info-box">
+      <div class="info-row">
+        <span class="info-label">Cloud Backup Folder</span>
+        <span class="info-value">📁 MICRO BACKUP</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Authorization Status</span>
+        <span class="info-value"><span class="status-dot"></span> Active & Verified</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Cross-Device Sync</span>
+        <span class="info-value">Android Phone ⇄ PC</span>
+      </div>
+    </div>
+
+    <button class="btn" onclick="window.close()">Return to Micro App</button>
+    <p class="countdown-text">This browser tab can be closed. Auto-closing in <span id="sec">5</span>s...</p>
+    <p class="footer-text">Micro • Industrial Fabrication ERP</p>
+  </div>
+
+  <script>
+    let remaining = 5;
+    const secEl = document.getElementById('sec');
+    const interval = setInterval(function() {
+      remaining--;
+      if (secEl) secEl.textContent = remaining;
+      if (remaining <= 0) {
+        clearInterval(interval);
+        window.close();
+      }
+    }, 1000);
+  </script>
+</body>
+</html>''';
   }
 }
