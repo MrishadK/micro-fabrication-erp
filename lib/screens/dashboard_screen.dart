@@ -938,140 +938,160 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       "Cloud backup, database restore and system preferences",
     ];
 
-    return Container(
-      height: 68,
-      padding: const EdgeInsets.symmetric(horizontal: 28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey.withOpacity(0.2)),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // View Title & Subtitle
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                titles[selectedIndex],
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1E293B),
-                ),
-              ),
-              Text(
-                subtitles[selectedIndex],
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[500],
-                ),
-              ),
-            ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool isCompact = constraints.maxWidth < 700;
+        final bool isVeryCompact = constraints.maxWidth < 560;
+
+        return Container(
+          height: 68,
+          padding: EdgeInsets.symmetric(horizontal: isCompact ? 16 : 28),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(
+              bottom: BorderSide(color: Colors.grey.withOpacity(0.2)),
+            ),
           ),
-
-          // Header Right Status & Actions
-          Row(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Google Drive Cloud Sync quick pill
-              InkWell(
-                onTap: () {
-                  if (GoogleDriveService.instance.isSignedIn) {
-                    _showQuickCloudDialog();
-                  } else {
-                    _handleConnectDrive();
-                  }
-                },
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: GoogleDriveService.instance.isSignedIn
-                        ? Colors.green[50]
-                        : Colors.orange[50],
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: GoogleDriveService.instance.isSignedIn
-                          ? Colors.green[200]!
-                          : Colors.orange[200]!,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.cloud_done_rounded,
-                        size: 16,
-                        color: GoogleDriveService.instance.isSignedIn
-                            ? Colors.green[700]
-                            : Colors.orange[700],
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        GoogleDriveService.instance.isSignedIn
-                            ? "Drive Synced"
-                            : "Drive Offline",
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: GoogleDriveService.instance.isSignedIn
-                              ? Colors.green[800]
-                              : Colors.orange[800],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-
-              // Date Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
+              // View Title & Subtitle
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
-                    const SizedBox(width: 8),
                     Text(
-                      DateTime.now().toString().split(' ')[0],
+                      titles[selectedIndex],
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF1E293B),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      subtitles[selectedIndex],
                       style: TextStyle(
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey[700],
+                        color: Colors.grey[500],
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
 
-              // + New Job Quick CTA
-              ElevatedButton.icon(
-                onPressed: () => ReceiptForm.show(context),
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text(
-                  "New Job",
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF6D00),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  elevation: 1,
-                ),
+              // Header Right Status & Actions
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Google Drive Cloud Sync quick pill
+                  InkWell(
+                    onTap: () {
+                      if (GoogleDriveService.instance.isSignedIn) {
+                        _showQuickCloudDialog();
+                      } else {
+                        _handleConnectDrive();
+                      }
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: GoogleDriveService.instance.isSignedIn
+                            ? Colors.green[50]
+                            : Colors.orange[50],
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: GoogleDriveService.instance.isSignedIn
+                              ? Colors.green[200]!
+                              : Colors.orange[200]!,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.cloud_done_rounded,
+                            size: 16,
+                            color: GoogleDriveService.instance.isSignedIn
+                                ? Colors.green[700]
+                                : Colors.orange[700],
+                          ),
+                          if (!isVeryCompact) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              GoogleDriveService.instance.isSignedIn
+                                  ? "Drive Synced"
+                                  : "Drive Offline",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: GoogleDriveService.instance.isSignedIn
+                                    ? Colors.green[800]
+                                    : Colors.orange[800],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Date Badge (hidden on compact widths to prevent any right overflow)
+                  if (!isCompact) ...[
+                    const SizedBox(width: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.calendar_today, size: 13, color: Colors.grey[600]),
+                          const SizedBox(width: 6),
+                          Text(
+                            DateTime.now().toString().split(' ')[0],
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(width: 10),
+
+                  // + New Job Quick CTA
+                  ElevatedButton.icon(
+                    onPressed: () => ReceiptForm.show(context),
+                    icon: const Icon(Icons.add, size: 16),
+                    label: const Text(
+                      "New Job",
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFF6D00),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      elevation: 1,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
