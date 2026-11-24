@@ -222,11 +222,19 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Show a loading spinner for the split second it checks SharedPreferences
+    // 1. Show app logo with loading spinner for the split second it checks SharedPreferences
     if (_isChecking) {
-      return const Scaffold(
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFFFF6D00)),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset('assets/Logo.png', width: 72, height: 72),
+              const SizedBox(height: 24),
+              const CircularProgressIndicator(color: Color(0xFFFF6D00), strokeWidth: 2.5),
+            ],
+          ),
         ),
       );
     }
@@ -241,45 +249,52 @@ class _AuthWrapperState extends State<AuthWrapper> {
     // 2. If locked and they canceled the prompt, show a beautiful lock screen
     if (_isLocked) {
       return Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.lock_person_rounded,
-                size: 80,
-                color: Color(0xFF1A237E),
-              ),
+              Image.asset('assets/Logo.png', width: 88, height: 88),
               const SizedBox(height: 20),
               const Text(
-                "App Locked",
+                "Micro Locked",
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1A237E),
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 6),
+              Text(
+                "Authenticate to open your workspace",
+                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+              ),
+              const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: _authenticate,
                 icon: const Icon(Icons.fingerprint, color: Colors.white),
                 label: const Text(
-                  "UNLOCK",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  "Unlock Workspace",
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF6D00), // Secondary Orange
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 30,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  backgroundColor: const Color(0xFF1A237E),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
+              ),
+              const SizedBox(height: 40),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const FlutterLogo(size: 14),
+                  const SizedBox(width: 6),
+                  Text(
+                    "Micro Fabrication Suite",
+                    style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                  ),
+                ],
               ),
             ],
           ),

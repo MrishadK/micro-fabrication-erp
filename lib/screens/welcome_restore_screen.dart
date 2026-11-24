@@ -359,16 +359,26 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.2)),
-                ),
-                child: const Icon(
-                  Icons.precision_manufacturing_rounded,
-                  size: 36,
                   color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.asset(
+                    'assets/Logo.png',
+                    width: 44,
+                    height: 44,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
@@ -461,12 +471,18 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'v0.2.3 • Developed by Rishad',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
-                  fontSize: 12,
-                ),
+              Row(
+                children: [
+                  const FlutterLogo(size: 14),
+                  const SizedBox(width: 8),
+                  Text(
+                    'v0.2.3 • Developed by Rishad',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.65),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
               InkWell(
                 onTap: _showSyncHelpDialog,
@@ -547,15 +563,25 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: _primary.withOpacity(0.1),
+            color: Colors.white,
             shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: _primary.withOpacity(0.12),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: const Icon(
-            Icons.precision_manufacturing_rounded,
-            size: 52,
-            color: _primary,
+          child: ClipOval(
+            child: Image.asset(
+              'assets/Logo.png',
+              width: 64,
+              height: 64,
+              fit: BoxFit.contain,
+            ),
           ),
         ),
         const SizedBox(height: 16),

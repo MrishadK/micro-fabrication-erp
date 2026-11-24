@@ -178,12 +178,29 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                   Center(
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 30.0),
-                      child: Text(
-                        "Developed by Rishad • Version $_appVersion",
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Image.asset(
+                              'assets/Logo.png',
+                              width: 18,
+                              height: 18,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Developed by Rishad • Version $_appVersion",
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const FlutterLogo(size: 14),
+                        ],
                       ),
                     ),
                   ),
