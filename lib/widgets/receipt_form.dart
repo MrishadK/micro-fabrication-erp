@@ -570,11 +570,11 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                 ctrl.text = _nameCtrl.text;
               }
               return SizedBox(
-                height: 40,
+                height: 44,
                 child: TextFormField(
                   controller: ctrl,
                   focusNode: focus,
-                  style: const TextStyle(fontSize: 13),
+                  style: const TextStyle(fontSize: 13.5),
                   textCapitalization: TextCapitalization.words,
                   decoration: _inputDec("Client Name *", icon: Icons.person_outline),
                   onChanged: (v) => _nameCtrl.text = v,
@@ -589,10 +589,10 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
         Expanded(
           flex: 3,
           child: SizedBox(
-            height: 40,
+            height: 44,
             child: TextFormField(
               controller: _phoneCtrl,
-              style: const TextStyle(fontSize: 13),
+              style: const TextStyle(fontSize: 13.5),
               keyboardType: TextInputType.phone,
               decoration: _inputDec("Phone Number", icon: Icons.phone_outlined),
             ),
@@ -604,10 +604,10 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
         Expanded(
           flex: 3,
           child: SizedBox(
-            height: 40,
+            height: 44,
             child: TextFormField(
               controller: _placeCtrl,
-              style: const TextStyle(fontSize: 13),
+              style: const TextStyle(fontSize: 13.5),
               textCapitalization: TextCapitalization.words,
               decoration: _inputDec("Place / City", icon: Icons.location_on_outlined),
             ),
@@ -628,8 +628,8 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
           },
           borderRadius: BorderRadius.circular(8),
           child: Container(
-            height: 40,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            height: 44,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
               color: const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(8),
@@ -642,7 +642,7 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                 const SizedBox(width: 6),
                 Text(
                   "Due: ${DateFormat('dd MMM').format(_deadlineDate)}",
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
                 ),
               ],
             ),
@@ -655,11 +655,11 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
   /// Compact Work Details Section
   Widget _buildWorkDetailsSection() {
     return SizedBox(
-      height: 40,
+      height: 44,
       child: TextFormField(
         controller: _detailsCtrl,
         maxLines: 1,
-        style: const TextStyle(fontSize: 13),
+        style: const TextStyle(fontSize: 13.5),
         textCapitalization: TextCapitalization.sentences,
         decoration: _inputDec("Work Details / Scope (Optional notes or specifications...)", icon: Icons.description_outlined),
       ),
@@ -777,11 +777,11 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                   ctrl.text = _materials[index]['name'];
                 }
                 return SizedBox(
-                  height: 38,
+                  height: 42,
                   child: TextFormField(
                     controller: ctrl,
                     focusNode: focus,
-                    style: const TextStyle(fontSize: 12.5),
+                    style: const TextStyle(fontSize: 13),
                     textCapitalization: TextCapitalization.words,
                     decoration: _miniFieldDec("e.g. Iron Pipe 2\""),
                     onChanged: (v) => _materials[index]['name'] = v,
@@ -794,13 +794,13 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
 
           // Quantity
           SizedBox(
-            width: 64,
-            height: 38,
+            width: 68,
+            height: 42,
             child: TextFormField(
               initialValue: _materials[index]['qty'] == 0 ? null : _materials[index]['qty'].toString(),
               keyboardType: TextInputType.number,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
               decoration: _miniFieldDec("0"),
               onChanged: (v) => setState(() => _materials[index]['qty'] = int.tryParse(v) ?? 0),
             ),
@@ -809,8 +809,8 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
 
           // Remaining Badge
           Container(
-            width: 60,
-            height: 38,
+            width: 64,
+            height: 42,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: remaining > 0 ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
@@ -820,7 +820,7 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
             child: Text(
               "$remaining",
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 12.5,
                 fontWeight: FontWeight.bold,
                 color: remaining > 0 ? const Color(0xFF166534) : const Color(0xFF64748B),
               ),
@@ -969,11 +969,11 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                       ctrl.text = _products[index]['name'];
                     }
                     return SizedBox(
-                      height: 38,
+                      height: 42,
                       child: TextFormField(
                         controller: ctrl,
                         focusNode: focus,
-                        style: const TextStyle(fontSize: 12.5),
+                        style: const TextStyle(fontSize: 13),
                         textCapitalization: TextCapitalization.words,
                         decoration: _miniFieldDec("e.g. Window Grill"),
                         onChanged: (v) {
@@ -998,13 +998,13 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
 
               // Qty
               SizedBox(
-                width: 58,
-                height: 38,
+                width: 64,
+                height: 42,
                 child: TextFormField(
                   initialValue: _products[index]['qty'] == 0 ? null : _products[index]['qty'].toString(),
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                   decoration: _miniFieldDec("0"),
                   onChanged: (v) {
                     setState(() {
@@ -1018,14 +1018,14 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
 
               // Rate
               SizedBox(
-                width: 78,
-                height: 38,
+                width: 84,
+                height: 42,
                 child: TextFormField(
                   key: ValueKey("rate_${_products[index]['id']}_${_products[index]['name']}"),
                   initialValue: _products[index]['rate'] == 0.0 ? null : _products[index]['rate'].toString(),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                   decoration: _miniFieldDec("0.0", prefixText: "₹"),
                   onChanged: (v) {
                     setState(() {
@@ -1119,24 +1119,25 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
         border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Total Cost Input
           SizedBox(
-            width: 140,
-            height: 38,
+            width: 155,
+            height: 48,
             child: TextFormField(
               controller: _costCtrl,
               keyboardType: TextInputType.number,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.currency_rupee, size: 14, color: Colors.blueGrey),
-                prefixIconConstraints: const BoxConstraints(minWidth: 28),
+                prefixIcon: const Icon(Icons.currency_rupee, size: 16, color: Colors.blueGrey),
+                prefixIconConstraints: const BoxConstraints(minWidth: 32),
                 hintText: "Total Cost",
-                hintStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Colors.grey.shade400),
+                hintStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.normal, color: Colors.grey.shade400),
                 isDense: true,
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
                 focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _primary, width: 1.5)),
@@ -1148,21 +1149,21 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
 
           // Advance Input
           SizedBox(
-            width: 130,
-            height: 38,
+            width: 145,
+            height: 48,
             child: TextFormField(
               controller: _advanceCtrl,
               keyboardType: TextInputType.number,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.payments_outlined, size: 14, color: Colors.blueGrey),
-                prefixIconConstraints: const BoxConstraints(minWidth: 28),
+                prefixIcon: const Icon(Icons.payments_outlined, size: 16, color: Colors.blueGrey),
+                prefixIconConstraints: const BoxConstraints(minWidth: 32),
                 hintText: "Advance",
-                hintStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Colors.grey.shade400),
+                hintStyle: TextStyle(fontSize: 13, fontWeight: FontWeight.normal, color: Colors.grey.shade400),
                 isDense: true,
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
                 focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _primary, width: 1.5)),
@@ -1174,8 +1175,8 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
 
           // Balance Due Pill
           Container(
-            height: 38,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
               color: balance > 0 ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
               borderRadius: BorderRadius.circular(8),
@@ -1187,15 +1188,15 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                 Text(
                   balance > 0 ? "Balance: " : "Paid: ",
                   style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                     color: balance > 0 ? const Color(0xFF92400E) : const Color(0xFF166534),
                   ),
                 ),
                 Text(
                   "₹${balance.toStringAsFixed(0)}",
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 14.5,
                     fontWeight: FontWeight.bold,
                     color: balance > 0 ? const Color(0xFF92400E) : const Color(0xFF166534),
                   ),
@@ -1211,24 +1212,26 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
             onPressed: () => Navigator.pop(context),
             style: TextButton.styleFrom(
               foregroundColor: Colors.grey.shade700,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              minimumSize: const Size(0, 48),
             ),
-            child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.w600)),
+            child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
           ),
           const SizedBox(width: 8),
 
           // Submit CTA
           ElevatedButton.icon(
             onPressed: _save,
-            icon: const Icon(Icons.check_circle_outline, size: 16),
+            icon: const Icon(Icons.check_circle_outline, size: 18),
             label: const Text(
               "CREATE JOB ORDER",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.3),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, letterSpacing: 0.3),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: _accent,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+              minimumSize: const Size(0, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               elevation: 1,
             ),
@@ -1240,12 +1243,12 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
 
   InputDecoration _inputDec(String hint, {IconData? icon}) => InputDecoration(
     hintText: hint,
-    hintStyle: TextStyle(fontSize: 12.5, color: Colors.grey.shade400),
-    prefixIcon: icon != null ? Icon(icon, size: 17, color: Colors.blueGrey) : null,
+    hintStyle: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+    prefixIcon: icon != null ? Icon(icon, size: 18, color: Colors.blueGrey) : null,
     isDense: true,
     filled: true,
     fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),
       borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
@@ -1262,13 +1265,13 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
 
   InputDecoration _miniFieldDec(String hint, {String? prefixText}) => InputDecoration(
     hintText: hint,
-    hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+    hintStyle: TextStyle(fontSize: 12.5, color: Colors.grey.shade400),
     prefixText: prefixText,
-    prefixStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+    prefixStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
     isDense: true,
     filled: true,
     fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),
       borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
