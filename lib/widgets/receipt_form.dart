@@ -338,7 +338,7 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
 
     return Dialog(
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       clipBehavior: Clip.antiAlias,
       insetPadding: EdgeInsets.symmetric(
         horizontal: isWideScreen ? 32 : 16,
@@ -346,8 +346,8 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: 820,
-          maxHeight: screenSize.height * 0.90,
+          maxWidth: 840,
+          maxHeight: screenSize.height * 0.88,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -355,28 +355,23 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
             // 1. Compact Header Bar
             _buildDialogHeader(),
 
-            // 2. Scrollable Compact Form Body
-            Expanded(
+            // 2. Flexible Scrollable Form Body (Shrink-wraps without empty space!)
+            Flexible(
               child: Form(
                 key: _formKey,
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // Section A: Client & Order Basics
                       _buildClientSection(),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 12),
 
                       // Section B: Notes / Work Scope
-                      TextFormField(
-                        controller: _detailsCtrl,
-                        maxLines: 1,
-                        style: const TextStyle(fontSize: 13),
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: _inputDec("Work Details / Scope (Optional)", icon: Icons.description_outlined),
-                      ),
-                      const SizedBox(height: 16),
+                      _buildWorkDetailsSection(),
+                      const SizedBox(height: 14),
 
                       // Section C: Dual-Column Materials & Products Grid
                       if (isWideScreen)
@@ -412,7 +407,7 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
   /// Compact Header Banner
   Widget _buildDialogHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 14, 16, 14),
+      padding: const EdgeInsets.fromLTRB(20, 12, 14, 12),
       decoration: const BoxDecoration(
         color: _primary,
         boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
@@ -439,19 +434,19 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
           const Text(
             "New Job Order",
             style: TextStyle(
-              fontSize: 17,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.white,
-              letterSpacing: 0.5,
+              letterSpacing: 0.3,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
 
           // Bill Number Badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -477,7 +472,7 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.12),
+                color: Colors.white.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -510,7 +505,7 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
   /// Compact Client & Order Basic Details Row
   Widget _buildClientSection() {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // 1. Client Name (Autocomplete)
         Expanded(
@@ -533,10 +528,10 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                   color: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
-                    side: BorderSide(color: Colors.grey.shade200),
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
                   ),
                   child: Container(
-                    width: 260,
+                    width: 280,
                     constraints: const BoxConstraints(maxHeight: 180),
                     child: ListView.builder(
                       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -574,43 +569,51 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
               if (ctrl.text.isEmpty && _nameCtrl.text.isNotEmpty) {
                 ctrl.text = _nameCtrl.text;
               }
-              return TextFormField(
-                controller: ctrl,
-                focusNode: focus,
-                style: const TextStyle(fontSize: 13),
-                textCapitalization: TextCapitalization.words,
-                decoration: _inputDec("Client Name *", icon: Icons.person_outline),
-                onChanged: (v) => _nameCtrl.text = v,
-                validator: (v) => v!.isEmpty ? "Required" : null,
+              return SizedBox(
+                height: 40,
+                child: TextFormField(
+                  controller: ctrl,
+                  focusNode: focus,
+                  style: const TextStyle(fontSize: 13),
+                  textCapitalization: TextCapitalization.words,
+                  decoration: _inputDec("Client Name *", icon: Icons.person_outline),
+                  onChanged: (v) => _nameCtrl.text = v,
+                ),
               );
             },
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
 
         // 2. Phone
         Expanded(
           flex: 3,
-          child: TextFormField(
-            controller: _phoneCtrl,
-            style: const TextStyle(fontSize: 13),
-            keyboardType: TextInputType.phone,
-            decoration: _inputDec("Phone", icon: Icons.phone_outlined),
+          child: SizedBox(
+            height: 40,
+            child: TextFormField(
+              controller: _phoneCtrl,
+              style: const TextStyle(fontSize: 13),
+              keyboardType: TextInputType.phone,
+              decoration: _inputDec("Phone Number", icon: Icons.phone_outlined),
+            ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
 
         // 3. Location / Place
         Expanded(
           flex: 3,
-          child: TextFormField(
-            controller: _placeCtrl,
-            style: const TextStyle(fontSize: 13),
-            textCapitalization: TextCapitalization.words,
-            decoration: _inputDec("Place", icon: Icons.location_on_outlined),
+          child: SizedBox(
+            height: 40,
+            child: TextFormField(
+              controller: _placeCtrl,
+              style: const TextStyle(fontSize: 13),
+              textCapitalization: TextCapitalization.words,
+              decoration: _inputDec("Place / City", icon: Icons.location_on_outlined),
+            ),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
 
         // 4. Deadline Date Picker
         InkWell(
@@ -625,13 +628,15 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
           },
           borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+            height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9),
+              color: const Color(0xFFF8FAFC),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(color: const Color(0xFFCBD5E1)),
             ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(Icons.flag_outlined, size: 16, color: Colors.deepOrange),
                 const SizedBox(width: 6),
@@ -647,12 +652,26 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
     );
   }
 
+  /// Compact Work Details Section
+  Widget _buildWorkDetailsSection() {
+    return SizedBox(
+      height: 40,
+      child: TextFormField(
+        controller: _detailsCtrl,
+        maxLines: 1,
+        style: const TextStyle(fontSize: 13),
+        textCapitalization: TextCapitalization.sentences,
+        decoration: _inputDec("Work Details / Scope (Optional notes or specifications...)", icon: Icons.description_outlined),
+      ),
+    );
+  }
+
   /// Compact Materials Card (Raw Input)
   Widget _buildMaterialsCard() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF7ED),
-        border: Border.all(color: Colors.orange.withOpacity(0.35)),
+        color: const Color(0xFFFFFBF5),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.35)),
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(12),
@@ -675,12 +694,16 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
               InkWell(
                 onTap: _addMaterial,
                 borderRadius: BorderRadius.circular(6),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.deepOrange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                   child: Row(
                     children: const [
-                      Icon(Icons.add, size: 14, color: Colors.deepOrange),
-                      SizedBox(width: 2),
+                      Icon(Icons.add, size: 13, color: Colors.deepOrange),
+                      SizedBox(width: 3),
                       Text("Add Item", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.deepOrange)),
                     ],
                   ),
@@ -688,7 +711,42 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
+
+          // Column Headers
+          Padding(
+            padding: const EdgeInsets.only(left: 4, right: 4, bottom: 6),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Text(
+                    "MATERIAL NAME",
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 0.5),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 64,
+                  child: Text(
+                    "QTY",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 0.5),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 60,
+                  child: Text(
+                    "LEFT",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 0.5),
+                  ),
+                ),
+                if (_materials.length > 1) const SizedBox(width: 24),
+              ],
+            ),
+          ),
 
           // Items List
           ..._materials.asMap().entries.map((entry) => _buildCompactMaterialRow(entry.key)),
@@ -704,10 +762,11 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Name Autocomplete
           Expanded(
-            flex: 4,
+            flex: 5,
             child: Autocomplete<String>(
               optionsBuilder: (v) => v.text.isEmpty
                   ? const Iterable.empty()
@@ -717,13 +776,16 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                 if (ctrl.text != _materials[index]['name']) {
                   ctrl.text = _materials[index]['name'];
                 }
-                return TextFormField(
-                  controller: ctrl,
-                  focusNode: focus,
-                  style: const TextStyle(fontSize: 12),
-                  textCapitalization: TextCapitalization.words,
-                  decoration: _miniFieldDec("Material / Item Name"),
-                  onChanged: (v) => _materials[index]['name'] = v,
+                return SizedBox(
+                  height: 38,
+                  child: TextFormField(
+                    controller: ctrl,
+                    focusNode: focus,
+                    style: const TextStyle(fontSize: 12.5),
+                    textCapitalization: TextCapitalization.words,
+                    decoration: _miniFieldDec("e.g. Iron Pipe 2\""),
+                    onChanged: (v) => _materials[index]['name'] = v,
+                  ),
                 );
               },
             ),
@@ -731,13 +793,15 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
           const SizedBox(width: 6),
 
           // Quantity
-          Expanded(
-            flex: 2,
+          SizedBox(
+            width: 64,
+            height: 38,
             child: TextFormField(
               initialValue: _materials[index]['qty'] == 0 ? null : _materials[index]['qty'].toString(),
               keyboardType: TextInputType.number,
-              style: const TextStyle(fontSize: 12),
-              decoration: _miniFieldDec("Qty"),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+              decoration: _miniFieldDec("0"),
               onChanged: (v) => setState(() => _materials[index]['qty'] = int.tryParse(v) ?? 0),
             ),
           ),
@@ -745,24 +809,34 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
 
           // Remaining Badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            width: 60,
+            height: 38,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: remaining > 0 ? Colors.green[50] : Colors.grey[100],
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: remaining > 0 ? Colors.green[200]! : Colors.grey[300]!),
+              color: remaining > 0 ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: remaining > 0 ? const Color(0xFF86EFAC) : const Color(0xFFCBD5E1)),
             ),
             child: Text(
-              "Left: $remaining",
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: remaining > 0 ? Colors.green[800] : Colors.grey[600]),
+              "$remaining",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: remaining > 0 ? const Color(0xFF166534) : const Color(0xFF64748B),
+              ),
             ),
           ),
 
           if (_materials.length > 1)
-            IconButton(
-              icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 16),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: () => setState(() => _materials.removeAt(index)),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: IconButton(
+                icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 18),
+                splashRadius: 16,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                onPressed: () => setState(() => _materials.removeAt(index)),
+              ),
             ),
         ],
       ),
@@ -773,8 +847,8 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
   Widget _buildProductsCard() {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        border: Border.all(color: Colors.blue.withOpacity(0.35)),
+        color: const Color(0xFFF0F7FF),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.35)),
         borderRadius: BorderRadius.circular(12),
       ),
       padding: const EdgeInsets.all(12),
@@ -797,12 +871,16 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
               InkWell(
                 onTap: _addProduct,
                 borderRadius: BorderRadius.circular(6),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1D4ED8).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                   child: Row(
                     children: const [
-                      Icon(Icons.add, size: 14, color: Color(0xFF1D4ED8)),
-                      SizedBox(width: 2),
+                      Icon(Icons.add, size: 13, color: Color(0xFF1D4ED8)),
+                      SizedBox(width: 3),
                       Text("Add Product", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8))),
                     ],
                   ),
@@ -810,7 +888,42 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
+
+          // Column Headers
+          Padding(
+            padding: const EdgeInsets.only(left: 4, right: 4, bottom: 6),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: Text(
+                    "PRODUCT NAME",
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 0.5),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 58,
+                  child: Text(
+                    "QTY",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 0.5),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 78,
+                  child: Text(
+                    "₹ RATE",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 0.5),
+                  ),
+                ),
+                if (_products.length > 1) const SizedBox(width: 24),
+              ],
+            ),
+          ),
 
           // Products List
           ..._products.asMap().entries.map((entry) => _buildCompactProductRow(entry.key)),
@@ -833,10 +946,11 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
       child: Column(
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Product Name Autocomplete
               Expanded(
-                flex: 4,
+                flex: 5,
                 child: Autocomplete<String>(
                   optionsBuilder: (v) => v.text.isEmpty
                       ? const Iterable.empty()
@@ -854,25 +968,28 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                     if (ctrl.text != _products[index]['name']) {
                       ctrl.text = _products[index]['name'];
                     }
-                    return TextFormField(
-                      controller: ctrl,
-                      focusNode: focus,
-                      style: const TextStyle(fontSize: 12),
-                      textCapitalization: TextCapitalization.words,
-                      decoration: _miniFieldDec("Product Name"),
-                      onChanged: (v) {
-                        _products[index]['name'] = v;
-                        final matched = _historicalRates.keys.firstWhere(
-                          (k) => k.toLowerCase() == v.trim().toLowerCase(),
-                          orElse: () => "",
-                        );
-                        if (matched.isNotEmpty) {
-                          setState(() {
-                            _products[index]['rate'] = _historicalRates[matched];
-                            _calculateTotal();
-                          });
-                        }
-                      },
+                    return SizedBox(
+                      height: 38,
+                      child: TextFormField(
+                        controller: ctrl,
+                        focusNode: focus,
+                        style: const TextStyle(fontSize: 12.5),
+                        textCapitalization: TextCapitalization.words,
+                        decoration: _miniFieldDec("e.g. Window Grill"),
+                        onChanged: (v) {
+                          _products[index]['name'] = v;
+                          final matched = _historicalRates.keys.firstWhere(
+                            (k) => k.toLowerCase() == v.trim().toLowerCase(),
+                            orElse: () => "",
+                          );
+                          if (matched.isNotEmpty) {
+                            setState(() {
+                              _products[index]['rate'] = _historicalRates[matched];
+                              _calculateTotal();
+                            });
+                          }
+                        },
+                      ),
                     );
                   },
                 ),
@@ -880,13 +997,15 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
               const SizedBox(width: 6),
 
               // Qty
-              Expanded(
-                flex: 2,
+              SizedBox(
+                width: 58,
+                height: 38,
                 child: TextFormField(
                   initialValue: _products[index]['qty'] == 0 ? null : _products[index]['qty'].toString(),
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(fontSize: 12),
-                  decoration: _miniFieldDec("Qty"),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                  decoration: _miniFieldDec("0"),
                   onChanged: (v) {
                     setState(() {
                       _products[index]['qty'] = int.tryParse(v) ?? 0;
@@ -898,14 +1017,16 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
               const SizedBox(width: 6),
 
               // Rate
-              Expanded(
-                flex: 2,
+              SizedBox(
+                width: 78,
+                height: 38,
                 child: TextFormField(
                   key: ValueKey("rate_${_products[index]['id']}_${_products[index]['name']}"),
                   initialValue: _products[index]['rate'] == 0.0 ? null : _products[index]['rate'].toString(),
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: const TextStyle(fontSize: 12),
-                  decoration: _miniFieldDec("₹ Rate"),
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                  decoration: _miniFieldDec("0.0", prefixText: "₹"),
                   onChanged: (v) {
                     setState(() {
                       _products[index]['rate'] = double.tryParse(v) ?? 0.0;
@@ -916,14 +1037,18 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
               ),
 
               if (_products.length > 1)
-                IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 16),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: () => setState(() {
-                    _products.removeAt(index);
-                    _calculateTotal();
-                  }),
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: IconButton(
+                    icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 18),
+                    splashRadius: 16,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                    onPressed: () => setState(() {
+                      _products.removeAt(index);
+                      _calculateTotal();
+                    }),
+                  ),
                 ),
             ],
           ),
@@ -936,26 +1061,42 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
               children: [
                 InkWell(
                   onTap: () => _openLinkDialog(index),
-                  borderRadius: BorderRadius.circular(4),
-                  child: Row(
-                    children: [
-                      Icon(Icons.link, size: 13, color: isLinked ? _primary : Colors.grey),
-                      const SizedBox(width: 4),
-                      Text(
-                        isLinked ? "Uses $linkedCount materials" : "Link materials...",
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: isLinked ? FontWeight.bold : FontWeight.normal,
-                          color: isLinked ? _primary : Colors.grey[600],
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isLinked ? const Color(0xFFDBEAFE) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: isLinked ? const Color(0xFF93C5FD) : const Color(0xFFCBD5E1)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.link, size: 13, color: isLinked ? _primary : Colors.grey[700]),
+                        const SizedBox(width: 4),
+                        Text(
+                          isLinked ? "Uses $linkedCount materials" : "Link materials...",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isLinked ? FontWeight.bold : FontWeight.w500,
+                            color: isLinked ? _primary : Colors.grey[700],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 if (rowTotal > 0)
-                  Text(
-                    "= ₹${rowTotal.toStringAsFixed(0)}",
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green[800]),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      "= ₹${rowTotal.toStringAsFixed(0)}",
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF166534)),
+                    ),
                   ),
               ],
             ),
@@ -973,27 +1114,32 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF8FAFC),
+        border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
       ),
       child: Row(
         children: [
           // Total Cost Input
           SizedBox(
-            width: 130,
+            width: 140,
+            height: 38,
             child: TextFormField(
               controller: _costCtrl,
               keyboardType: TextInputType.number,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
               decoration: InputDecoration(
-                labelText: "Total Cost",
-                prefixText: "₹ ",
+                prefixIcon: const Icon(Icons.currency_rupee, size: 14, color: Colors.blueGrey),
+                prefixIconConstraints: const BoxConstraints(minWidth: 28),
+                hintText: "Total Cost",
+                hintStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Colors.grey.shade400),
                 isDense: true,
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _primary, width: 1.5)),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -1002,19 +1148,24 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
 
           // Advance Input
           SizedBox(
-            width: 120,
+            width: 130,
+            height: 38,
             child: TextFormField(
               controller: _advanceCtrl,
               keyboardType: TextInputType.number,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
               decoration: InputDecoration(
-                labelText: "Advance",
-                prefixText: "₹ ",
+                prefixIcon: const Icon(Icons.payments_outlined, size: 14, color: Colors.blueGrey),
+                prefixIconConstraints: const BoxConstraints(minWidth: 28),
+                hintText: "Advance",
+                hintStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Colors.grey.shade400),
                 isDense: true,
                 filled: true,
                 fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: _primary, width: 1.5)),
               ),
               onChanged: (_) => setState(() {}),
             ),
@@ -1023,23 +1174,30 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
 
           // Balance Due Pill
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            height: 38,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: balance > 0 ? Colors.amber[50] : Colors.green[50],
+              color: balance > 0 ? const Color(0xFFFEF3C7) : const Color(0xFFDCFCE7),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: balance > 0 ? Colors.amber[300]! : Colors.green[300]!),
+              border: Border.all(color: balance > 0 ? const Color(0xFFFCD34D) : const Color(0xFF86EFAC)),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text("Balance Due", style: TextStyle(fontSize: 9, color: Colors.grey)),
+                Text(
+                  balance > 0 ? "Balance: " : "Paid: ",
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: balance > 0 ? const Color(0xFF92400E) : const Color(0xFF166534),
+                  ),
+                ),
                 Text(
                   "₹${balance.toStringAsFixed(0)}",
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: balance > 0 ? Colors.amber[900] : Colors.green[900],
+                    color: balance > 0 ? const Color(0xFF92400E) : const Color(0xFF166534),
                   ),
                 ),
               ],
@@ -1051,24 +1209,28 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
           // Cancel
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.grey.shade700,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+            child: const Text("Cancel", style: TextStyle(fontWeight: FontWeight.w600)),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
 
           // Submit CTA
           ElevatedButton.icon(
             onPressed: _save,
-            icon: const Icon(Icons.check_circle_outline, size: 18),
+            icon: const Icon(Icons.check_circle_outline, size: 16),
             label: const Text(
               "CREATE JOB ORDER",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 0.3),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: _accent,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              elevation: 2,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 1,
             ),
           ),
         ],
@@ -1076,20 +1238,21 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
     );
   }
 
-  InputDecoration _inputDec(String label, {IconData? icon}) => InputDecoration(
-    labelText: label,
-    prefixIcon: icon != null ? Icon(icon, size: 18) : null,
+  InputDecoration _inputDec(String hint, {IconData? icon}) => InputDecoration(
+    hintText: hint,
+    hintStyle: TextStyle(fontSize: 12.5, color: Colors.grey.shade400),
+    prefixIcon: icon != null ? Icon(icon, size: 17, color: Colors.blueGrey) : null,
     isDense: true,
     filled: true,
     fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide(color: Colors.grey.shade300),
+      borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide(color: Colors.grey.shade300),
+      borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),
@@ -1097,26 +1260,45 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
     ),
   );
 
-  InputDecoration _miniFieldDec(String label) => InputDecoration(
-    labelText: label,
+  InputDecoration _miniFieldDec(String hint, {String? prefixText}) => InputDecoration(
+    hintText: hint,
+    hintStyle: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+    prefixText: prefixText,
+    prefixStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
     isDense: true,
     filled: true,
     fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
     border: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(6),
-      borderSide: BorderSide(color: Colors.grey.shade300),
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(6),
-      borderSide: BorderSide(color: Colors.grey.shade300),
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: _primary, width: 1.5),
     ),
   );
 
   void _save() async {
     HapticFeedback.lightImpact();
     if (!_formKey.currentState!.validate()) return;
-    if (_nameCtrl.text.isEmpty) return;
+    if (_nameCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text("Please enter Client Name"),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
 
     final finalMaterials = _materials
         .where((e) => e['name'].toString().isNotEmpty)
