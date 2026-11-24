@@ -953,6 +953,7 @@ class _SummaryViewState extends State<SummaryView> {
                 if (data['payment_id'] != null)
                   InkWell(
                     onTap: () => _editScrapOrDiscount(data),
+                    borderRadius: BorderRadius.circular(6),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8.0,

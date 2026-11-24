@@ -565,6 +565,7 @@ class _EditJobDialogState extends State<EditJobDialog> {
                   child: Material(
                     elevation: 6,
                     color: Colors.white,
+                    clipBehavior: Clip.antiAlias,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(color: Colors.grey.shade200),
@@ -700,6 +701,7 @@ class _EditJobDialogState extends State<EditJobDialog> {
                       child: Material(
                         elevation: 6,
                         color: Colors.white,
+                        clipBehavior: Clip.antiAlias,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(color: Colors.grey.shade200),
@@ -797,6 +799,7 @@ class _EditJobDialogState extends State<EditJobDialog> {
             padding: const EdgeInsets.only(top: 4, left: 4),
             child: InkWell(
               onTap: () => _openLinkDialog(index),
+              borderRadius: BorderRadius.circular(8),
               child: Row(
                 children: [
                   Transform.rotate(
@@ -986,6 +989,7 @@ class _EditJobDialogState extends State<EditJobDialog> {
             Expanded(
               child: InkWell(
                 onTap: _pickDate,
+                borderRadius: BorderRadius.circular(8),
                 child: InputDecorator(
                   decoration: _inputDec("Deadline Date", Icons.event),
                   child: Text(
@@ -1049,6 +1053,7 @@ class _EditJobDialogState extends State<EditJobDialog> {
           ),
           const SizedBox(height: 8),
           Container(
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: Colors.green[50],
               border: Border.all(color: Colors.green[200]!),

@@ -364,6 +364,7 @@ class _ClientHistoryViewState extends ConsumerState<ClientHistoryView> {
       shadowColor: Colors.black.withOpacity(0.2),
       borderRadius: BorderRadius.circular(16),
       color: Colors.white,
+      clipBehavior: Clip.antiAlias,
       child: Container(
         constraints: const BoxConstraints(maxHeight: 280),
         decoration: BoxDecoration(
@@ -630,9 +631,11 @@ class _ClientHistoryViewState extends ConsumerState<ClientHistoryView> {
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: _cardDecoration(),
+                clipBehavior: Clip.antiAlias,
                 child: Material(
                   color: Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
+                  clipBehavior: Clip.antiAlias,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(16),
                     onTap: () => _selectSuggestion(client['client_name']),
@@ -1139,6 +1142,7 @@ class _DetailedJobCardState extends ConsumerState<_DetailedJobCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: _cardDecoration(),
+      clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

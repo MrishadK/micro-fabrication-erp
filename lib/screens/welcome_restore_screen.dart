@@ -427,6 +427,7 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
                   final uri = Uri.parse('https://console.cloud.google.com/apis/credentials?project=micro-487214');
                   if (await canLaunchUrl(uri)) await launchUrl(uri);
                 },
+                borderRadius: BorderRadius.circular(8),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
@@ -1082,6 +1083,8 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
       ),
       child: Material(
         color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: _isRestoring ? null : _promptEnsureAndroidBackup,
@@ -1174,6 +1177,8 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
       ),
       child: Material(
         color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: _isRestoring ? null : _handleLocalFileRestore,

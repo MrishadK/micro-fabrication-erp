@@ -2,7 +2,7 @@ import 'dart:io'; // 🔥 NEW: Required for internet check
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:google_fonts/google_fonts.dart';
 // 🔥 EXTERNAL PACKAGES 🔥 (mobile-only, guarded by platform checks)
 import 'package:shorebird_code_push/shorebird_code_push.dart'
     if (dart.library.io) 'package:shorebird_code_push/shorebird_code_push.dart';
@@ -30,8 +30,9 @@ class DashboardScreen extends ConsumerStatefulWidget {
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final Color _primaryColor = const Color(0xFF1A237E);
   // Only create ShorebirdUpdater on mobile platforms
-  late final ShorebirdUpdater? _updater =
-      (Platform.isAndroid || Platform.isIOS) ? ShorebirdUpdater() : null;
+  late final ShorebirdUpdater? _updater = (Platform.isAndroid || Platform.isIOS)
+      ? ShorebirdUpdater()
+      : null;
 
   bool _showUpdateWindow = false;
   bool _isUpdateWindowMinimized = false;
@@ -47,7 +48,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("Connected to Google Drive: ${GoogleDriveService.instance.email ?? 'Success'}"),
+              content: Text(
+                "Connected to Google Drive: ${GoogleDriveService.instance.email ?? 'Success'}",
+              ),
               backgroundColor: Colors.green[700],
               behavior: SnackBarBehavior.floating,
             ),
@@ -55,7 +58,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("Google Sign-In was cancelled or could not be completed."),
+              content: Text(
+                "Google Sign-In was cancelled or could not be completed.",
+              ),
               backgroundColor: Colors.orange,
               behavior: SnackBarBehavior.floating,
             ),
@@ -88,7 +93,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           children: const [
             Icon(Icons.cloud_sync_rounded, color: Color(0xFF1A237E)),
             SizedBox(width: 10),
-            Text("Google Drive Sync", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(
+              "Google Drive Sync",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
           ],
         ),
         content: Column(
@@ -118,7 +126,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   backgroundColor: _primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
             ),
@@ -136,7 +146,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   foregroundColor: _primaryColor,
                   side: BorderSide(color: _primaryColor.withOpacity(0.4)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
             ),
@@ -161,17 +173,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Future<void> _triggerDriveBackup() async {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Uploading backup to Google Drive..."), duration: Duration(seconds: 1)),
+      const SnackBar(
+        content: Text("Uploading backup to Google Drive..."),
+        duration: Duration(seconds: 1),
+      ),
     );
     final id = await GoogleDriveService.instance.uploadDatabase();
     if (mounted) {
       if (id != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: const Text("Backup uploaded successfully!"), backgroundColor: Colors.green[700]),
+          SnackBar(
+            content: const Text("Backup uploaded successfully!"),
+            backgroundColor: Colors.green[700],
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Backup failed. Check internet."), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text("Backup failed. Check internet."),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -205,10 +226,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("Cancel")),
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text("Cancel"),
+          ),
           ElevatedButton(
             onPressed: () => Navigator.pop(c, true),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1A237E),
+              foregroundColor: Colors.white,
+            ),
             child: const Text("Yes, Restore Now"),
           ),
         ],
@@ -218,18 +245,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (confirm != true) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Restoring database from Google Drive..."), duration: Duration(seconds: 2)),
+      const SnackBar(
+        content: Text("Restoring database from Google Drive..."),
+        duration: Duration(seconds: 2),
+      ),
     );
     final success = await GoogleDriveService.instance.restoreLatestBackup();
     if (mounted) {
       if (success) {
         ref.invalidate(activeJobsProvider);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: const Text("Data restored successfully!"), backgroundColor: Colors.green[700]),
+          SnackBar(
+            content: const Text("Data restored successfully!"),
+            backgroundColor: Colors.green[700],
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Restore failed or no backup found in 'MICRO BACKUP'."), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text(
+              "Restore failed or no backup found in 'MICRO BACKUP'.",
+            ),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -546,19 +584,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     // Mobile Layout (Phones / narrow screens)
     return Scaffold(
-      body: Stack(children: [
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeInCubic,
-          transitionBuilder: _buildPageTransition,
-          child: KeyedSubtree(
-            key: ValueKey<int>(navIndex),
-            child: pages[navIndex],
+      body: Stack(
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: _buildPageTransition,
+            child: KeyedSubtree(
+              key: ValueKey<int>(navIndex),
+              child: pages[navIndex],
+            ),
           ),
-        ),
-        _buildUpdateStatusOverlay(),
-      ]),
+          _buildUpdateStatusOverlay(),
+        ],
+      ),
       floatingActionButton: AnimatedScale(
         scale: navIndex == 0 ? 1.0 : 0.0,
         duration: const Duration(milliseconds: 300),
@@ -569,10 +609,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           icon: const Icon(Icons.add, color: Colors.white),
           label: const Text(
             "NEW JOB",
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
         ),
       ),
@@ -592,10 +629,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            _primaryColor,
-            const Color(0xFF0C133B),
-          ],
+          colors: [_primaryColor, const Color(0xFF0C133B)],
         ),
         boxShadow: [
           BoxShadow(
@@ -621,7 +655,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       BoxShadow(
                         color: Colors.black.withOpacity(0.18),
                         blurRadius: 8,
-                        offset: const Offset(0, 2),
+                        offset: const Offset(0, 5),
                       ),
                     ],
                   ),
@@ -629,8 +663,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     borderRadius: BorderRadius.circular(8),
                     child: Image.asset(
                       'assets/app.png',
-                      width: 32,
-                      height: 32,
+                      width: 50,
+                      height: 50,
                       fit: BoxFit.contain,
                     ),
                   ),
@@ -639,22 +673,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "MICRO",
-                      style: TextStyle(
+                      style: GoogleFonts.orbitron(
                         color: Colors.white,
-                        fontSize: 18,
+                        fontSize: 22,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: 2,
+                        letterSpacing: 3,
                       ),
                     ),
                     Text(
                       "FABRICATION SUITE",
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.6),
+                      style: GoogleFonts.montserrat(
+                        color: Colors.white.withValues(alpha: 0.6),
                         fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.5,
                       ),
                     ),
                   ],
@@ -762,15 +796,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Icon(
                   icon,
                   size: 20,
-                  color: isSelected ? const Color(0xFFFF6D00) : Colors.white.withOpacity(0.7),
+                  color: isSelected
+                      ? const Color(0xFFFF6D00)
+                      : Colors.white.withOpacity(0.7),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
                     label,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.white.withOpacity(0.7),
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                      color: isSelected
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.7),
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.w500,
                       fontSize: 13,
                     ),
                   ),
@@ -795,7 +835,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   /// Cloud status tile at bottom of sidebar
   Widget _buildSidebarCloudWidget() {
     final bool isSignedIn = GoogleDriveService.instance.isSignedIn;
-    final String email = GoogleDriveService.instance.email ?? "Drive Not Connected";
+    final String email =
+        GoogleDriveService.instance.email ?? "Drive Not Connected";
 
     return Container(
       margin: const EdgeInsets.all(16),
@@ -874,18 +915,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       }
                     },
                     icon: Icon(
-                      isSignedIn ? Icons.cloud_sync_rounded : Icons.login_rounded,
+                      isSignedIn
+                          ? Icons.cloud_sync_rounded
+                          : Icons.login_rounded,
                       size: 14,
                     ),
                     label: Text(
                       isSignedIn ? "Backup & Restore" : "Connect Drive",
-                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      backgroundColor: isSignedIn ? Colors.white.withOpacity(0.08) : const Color(0xFFFF6D00),
+                      backgroundColor: isSignedIn
+                          ? Colors.white.withOpacity(0.08)
+                          : const Color(0xFFFF6D00),
                       side: BorderSide(
-                        color: isSignedIn ? Colors.white.withOpacity(0.3) : const Color(0xFFFF6D00),
+                        color: isSignedIn
+                            ? Colors.white.withOpacity(0.3)
+                            : const Color(0xFFFF6D00),
                       ),
                       padding: EdgeInsets.zero,
                       shape: RoundedRectangleBorder(
@@ -903,20 +953,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final offsetAnim = Tween<Offset>(
       begin: const Offset(0.02, 0.0),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: animation,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
     final fadeAnim = CurvedAnimation(
       parent: animation,
       curve: Curves.easeOutCubic,
     );
     return FadeTransition(
       opacity: fadeAnim,
-      child: SlideTransition(
-        position: offsetAnim,
-        child: child,
-      ),
+      child: SlideTransition(position: offsetAnim, child: child),
     );
   }
 
@@ -973,10 +1017,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                     Text(
                       subtitles[selectedIndex],
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1000,7 +1041,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     },
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: GoogleDriveService.instance.isSignedIn
                             ? Colors.green[50]
@@ -1046,14 +1090,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   if (!isCompact) ...[
                     const SizedBox(width: 10),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.calendar_today, size: 13, color: Colors.grey[600]),
+                          Icon(
+                            Icons.calendar_today,
+                            size: 13,
+                            color: Colors.grey[600],
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             DateTime.now().toString().split(' ')[0],
@@ -1076,13 +1127,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     icon: const Icon(Icons.add, size: 16),
                     label: const Text(
                       "New Job",
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFFF6D00),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       elevation: 1,
                     ),
                   ),

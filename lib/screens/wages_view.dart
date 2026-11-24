@@ -270,6 +270,7 @@ class _WagesViewState extends State<WagesView> {
                                       totalPaidSoFar -= p['amount'];
                                       setDialogState(() {});
                                     },
+                                    borderRadius: BorderRadius.circular(20),
                                     child: const Icon(
                                       Icons.delete,
                                       color: Colors.red,
@@ -308,6 +309,7 @@ class _WagesViewState extends State<WagesView> {
                           setDialogState(() => selectedDate = picked);
                         }
                       },
+                      borderRadius: BorderRadius.circular(8),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -541,6 +543,7 @@ class _WagesViewState extends State<WagesView> {
                         // 🔥 NEW BUTTON MOVED TO TOP 🔥
                         InkWell(
                           onTap: () => _showWorkerDialog(context, null),
+                          borderRadius: BorderRadius.circular(100),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -919,6 +922,7 @@ class _WagesViewState extends State<WagesView> {
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () async {
@@ -1140,6 +1144,7 @@ class _WagesViewState extends State<WagesView> {
                               pay,
                               paymentHistory,
                             ),
+                            borderRadius: BorderRadius.circular(6),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
@@ -1697,6 +1702,7 @@ class _WagesViewState extends State<WagesView> {
                                   ...pieceItems.asMap().entries.map(
                                     (e) => Container(
                                       margin: const EdgeInsets.only(bottom: 6),
+                                      clipBehavior: Clip.antiAlias,
                                       decoration: BoxDecoration(
                                         color: Colors.grey[50],
                                         borderRadius: BorderRadius.circular(8),
@@ -2680,6 +2686,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                               normalHours = 8.0;
                               otHours = 0.0;
                             }),
+                            borderRadius: BorderRadius.circular(8),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
@@ -2706,6 +2713,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                         Expanded(
                           child: InkWell(
                             onTap: () => setSheetState(() => mode = 'piece'),
+                            borderRadius: BorderRadius.circular(8),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               decoration: BoxDecoration(
@@ -3027,6 +3035,10 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
               margin: const EdgeInsets.only(bottom: 10),
               color: Colors.blue[50],
               elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              clipBehavior: Clip.antiAlias,
               child: ListTile(
                 title: Text(
                   '${t['name']} (Page: ${t['page_no']})',
@@ -3353,6 +3365,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                       if (picked != null)
                         setDialogState(() => selectedDate = picked);
                     },
+                    borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -4436,6 +4449,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
 
     return InkWell(
       onTap: () => _editDay(date),
+      borderRadius: BorderRadius.circular(8),
       child: Container(
         decoration: BoxDecoration(
           color: bg,
@@ -4647,6 +4661,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                           );
                           _loadPayment();
                         },
+                        borderRadius: BorderRadius.circular(12),
                         child: const Icon(
                           Icons.close_rounded,
                           size: 13,

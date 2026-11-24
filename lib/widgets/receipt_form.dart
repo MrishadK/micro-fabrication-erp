@@ -536,6 +536,7 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                 child: Material(
                   elevation: 6,
                   color: Colors.white,
+                  clipBehavior: Clip.antiAlias,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                     side: const BorderSide(color: Color(0xFFE2E8F0)),

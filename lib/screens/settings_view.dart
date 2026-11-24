@@ -225,9 +225,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   Widget _buildSecurityCard() {
     // On desktop, biometric is not available — show disabled state
     if (Platform.isWindows || Platform.isLinux) {
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: _cardDecoration(),
+      return _buildCard(
         child: ListTile(
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -251,9 +249,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       );
     }
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: _cardDecoration(),
+    return _buildCard(
       child: SwitchListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         title: const Text(
@@ -362,9 +358,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     final String? photoUrl =
         _user?.photoUrl ?? _cachedPhotoUrl ?? GoogleDriveService.instance.photoUrl;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: _cardDecoration(),
+    return _buildCard(
       child: Column(
         children: [
           ListTile(
@@ -504,9 +498,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   }
 
   Widget _buildSummaryCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: _cardDecoration(),
+    return _buildCard(
       child: _settingsTile(
         icon: Icons.query_stats_rounded,
         color: Colors.purple,
@@ -521,9 +513,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   }
 
   Widget _buildMigrationCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: _cardDecoration(),
+    return _buildCard(
       child: Column(
         children: [
           _settingsTile(
@@ -557,9 +547,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   }
 
   Widget _buildDataCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: _cardDecoration(),
+    return _buildCard(
       child: Column(
         children: [
           _settingsTile(
@@ -849,6 +837,20 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       ],
     ),
   );
+
+  Widget _buildCard({required Widget child}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: _cardDecoration(),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: child,
+      ),
+    );
+  }
 
   BoxDecoration _cardDecoration() => BoxDecoration(
     color: Colors.white,

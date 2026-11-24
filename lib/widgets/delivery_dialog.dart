@@ -382,6 +382,7 @@ class _DispatchItemCardState extends State<_DispatchItemCard>
                         setState(() => _selectedDate = picked);
                       }
                     },
+                    borderRadius: BorderRadius.circular(8),
                     child: Container(
                       height: 44,
                       padding: const EdgeInsets.symmetric(horizontal: 10),

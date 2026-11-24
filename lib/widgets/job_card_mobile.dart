@@ -717,7 +717,10 @@ class JobCardMobile extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         child: Material(
           color: Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          clipBehavior: Clip.antiAlias,
           child: InkWell(
+            borderRadius: BorderRadius.circular(20),
             onTap: () => HapticFeedback.lightImpact(),
             child: Theme(
               data: Theme.of(
@@ -1652,6 +1655,7 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(

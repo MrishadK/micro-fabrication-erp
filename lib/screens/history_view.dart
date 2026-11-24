@@ -478,6 +478,7 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () async {
@@ -2632,6 +2633,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
@@ -2700,6 +2702,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               if (onEdit != null)
                 InkWell(
                   onTap: onEdit,
+                  borderRadius: BorderRadius.circular(6),
                   child: Padding(
                     padding: const EdgeInsets.only(right: 8.0),
                     child: Text(
