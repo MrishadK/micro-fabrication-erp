@@ -108,7 +108,7 @@ class _ExcessPaymentDialogState extends State<ExcessPaymentDialog> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Container(
         width: double.infinity,
-        constraints: const BoxConstraints(maxHeight: 600),
+        constraints: const BoxConstraints(maxWidth: 440, maxHeight: 600),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
