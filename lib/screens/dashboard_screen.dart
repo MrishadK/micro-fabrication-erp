@@ -366,10 +366,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutBack,
         child: FloatingActionButton.extended(
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (c) => const ReceiptForm()),
-          ),
+          onPressed: () => ReceiptForm.show(context),
           backgroundColor: const Color(0xFFFF6D00),
           icon: const Icon(Icons.add, color: Colors.white),
           label: const Text(
@@ -465,10 +462,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               width: double.infinity,
               height: 46,
               child: ElevatedButton.icon(
-                onPressed: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (c) => const ReceiptForm()),
-                ),
+                onPressed: () => ReceiptForm.show(context),
                 icon: const Icon(Icons.add_rounded, size: 20),
                 label: const Text(
                   "NEW JOB ORDER",
@@ -787,6 +781,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(width: 14),
+
+              // + New Job Quick CTA
+              ElevatedButton.icon(
+                onPressed: () => ReceiptForm.show(context),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text(
+                  "New Job",
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF6D00),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 1,
                 ),
               ),
             ],

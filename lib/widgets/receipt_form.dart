@@ -6,8 +6,21 @@ import 'package:flutter/services.dart';
 import '../database_helper.dart';
 import '../providers.dart';
 
+/// Compact Popup Dialog for creating a New Job Order.
+/// Designed specifically as a compact, modern workstation modal dialog
+/// with high-density layout and side-by-side materials/products sections.
 class ReceiptForm extends ConsumerStatefulWidget {
-  const ReceiptForm({super.key});
+  final bool isDialog;
+  const ReceiptForm({super.key, this.isDialog = true});
+
+  /// Static helper to display the compact popup dialog from anywhere
+  static Future<bool?> show(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const ReceiptForm(isDialog: true),
+    );
+  }
 
   @override
   ConsumerState<ReceiptForm> createState() => _ReceiptFormState();
@@ -32,6 +45,9 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
   DateTime _deadlineDate = DateTime.now().add(const Duration(days: 7));
   DateTime _billDate = DateTime.now();
 
+  static const Color _primary = Color(0xFF1A237E);
+  static const Color _accent = Color(0xFFFF6D00);
+
   @override
   void initState() {
     super.initState();
@@ -39,6 +55,18 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
     _loadNextBillNumber();
     _addMaterial();
     _addProduct();
+  }
+
+  @override
+  void dispose() {
+    _billNoCtrl.dispose();
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _placeCtrl.dispose();
+    _costCtrl.dispose();
+    _advanceCtrl.dispose();
+    _detailsCtrl.dispose();
+    super.dispose();
   }
 
   // --- FETCH HISTORICAL DATA ---
@@ -113,7 +141,6 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
     _costCtrl.text = total.toInt().toString();
   }
 
-  // --- Gets Remaining Qty for an Input Material ---
   int _getRemainingQty(String matId, int totalQty) {
     int used = 0;
     for (var prod in _products) {
@@ -151,7 +178,6 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
           ),
         );
 
-        // Controllers for the input boxes
         Map<String, TextEditingController> textCtrls = {};
         for (var link in tempLinks) {
           textCtrls[link['id']] = TextEditingController(
@@ -162,32 +188,32 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               clipBehavior: Clip.antiAlias,
               titlePadding: EdgeInsets.zero,
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               title: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 decoration: const BoxDecoration(
-                  color: Color(0xFF1A237E),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  color: _primary,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                 ),
                 child: Row(
                   children: const [
-                    Icon(Icons.link, color: Colors.white, size: 24),
-                    SizedBox(width: 12),
+                    Icon(Icons.link, color: Colors.white, size: 20),
+                    SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        "Select Materials",
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
+                        "Link Input Materials",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
                       ),
                     ),
                   ],
                 ),
               ),
               content: SizedBox(
-                width: double.maxFinite,
+                width: 450,
                 child: ListView.separated(
                   shrinkWrap: true,
                   itemCount: validMaterials.length,
@@ -197,12 +223,10 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                     final String matId = mat['id'];
                     final int totalQty = mat['qty'] as int;
 
-                    // Calculate how much of this material is used by OTHER products
                     int otherUsed = 0;
                     for (int p = 0; p < _products.length; p++) {
                       if (p == productIndex) continue;
-                      for (var link
-                          in (_products[p]['linked_materials'] ?? [])) {
+                      for (var link in (_products[p]['linked_materials'] ?? [])) {
                         if (link['id'] == matId) {
                           otherUsed += (link['used_qty'] as int? ?? 0);
                         }
@@ -216,10 +240,11 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                     bool isSelected = linkIndex != -1;
 
                     return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      dense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
                       leading: Checkbox(
                         value: isSelected,
-                        activeColor: const Color(0xFF1A237E),
+                        activeColor: _primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                         onChanged: (maxAvailable <= 0 && !isSelected)
                             ? null
@@ -227,13 +252,9 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                                 setStateDialog(() {
                                   if (val == true) {
                                     tempLinks.add({'id': matId, 'used_qty': 1});
-                                    textCtrls[matId] = TextEditingController(
-                                      text: "1",
-                                    );
+                                    textCtrls[matId] = TextEditingController(text: "1");
                                   } else {
-                                    tempLinks.removeWhere(
-                                      (l) => l['id'] == matId,
-                                    );
+                                    tempLinks.removeWhere((l) => l['id'] == matId);
                                     textCtrls.remove(matId);
                                   }
                                 });
@@ -241,56 +262,36 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                       ),
                       title: Text(
                         mat['name'],
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                       subtitle: Text(
                         "Available: $maxAvailable / Total: $totalQty",
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                       ),
                       trailing: isSelected
                           ? SizedBox(
-                              width: 70,
+                              width: 65,
                               child: TextField(
                                 controller: textCtrls[matId],
                                 keyboardType: TextInputType.number,
                                 textAlign: TextAlign.center,
+                                style: const TextStyle(fontSize: 12),
                                 decoration: InputDecoration(
                                   isDense: true,
                                   filled: true,
                                   fillColor: Colors.grey[50],
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 10,
-                                    horizontal: 8,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: Colors.grey[300]!),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide(color: Colors.grey[300]!),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: const BorderSide(color: Color(0xFF1A237E)),
-                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
                                 ),
                                 onChanged: (val) {
                                   int parsed = int.tryParse(val) ?? 0;
-
-                                  // --- CAP TO MAX AVAILABLE ---
                                   if (parsed > maxAvailable) {
                                     parsed = maxAvailable;
                                     textCtrls[matId]!.text = parsed.toString();
-                                    textCtrls[matId]!
-                                        .selection = TextSelection.fromPosition(
-                                      TextPosition(
-                                        offset: textCtrls[matId]!.text.length,
-                                      ),
+                                    textCtrls[matId]!.selection = TextSelection.fromPosition(
+                                      TextPosition(offset: textCtrls[matId]!.text.length),
                                     );
                                   }
-
-                                  // Update the backend data
                                   setStateDialog(() {
                                     tempLinks[linkIndex]['used_qty'] = parsed;
                                   });
@@ -302,11 +303,10 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                   },
                 ),
               ),
-              actionsPadding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(foregroundColor: Colors.grey[700]),
                   child: const Text("Cancel"),
                 ),
                 ElevatedButton(
@@ -317,12 +317,11 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                     Navigator.pop(context);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A237E),
+                    backgroundColor: _primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    elevation: 0,
                   ),
-                  child: const Text("Save Links", style: TextStyle(fontWeight: FontWeight.bold)),
+                  child: const Text("Save Links"),
                 ),
               ],
             );
@@ -334,449 +333,506 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("New Job Order"),
-        leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => Navigator.pop(context),
-        ),
+    final screenSize = MediaQuery.of(context).size;
+    final bool isWideScreen = screenSize.width >= 750;
+
+    return Dialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      clipBehavior: Clip.antiAlias,
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isWideScreen ? 32 : 16,
+        vertical: 24,
       ),
-      // 🔥 ADDED SAFEAREA HERE TO AVOID THE NAV BAR
-      body: SafeArea(
-        bottom: true,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            // 🔥 ADDED EXTRA BOTTOM PADDING SO IT DOESN'T HUG THE EDGE
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _billNoCtrl,
-                        decoration: const InputDecoration(
-                          labelText: "Bill No (Auto)",
-                          filled: true,
-                          fillColor: Color(0xFFE3F2FD),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 15),
-                    InkWell(
-                      onTap: () async {
-                        final d = await showDatePicker(
-                          context: context,
-                          initialDate: _billDate,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime.now(),
-                        );
-                        if (d != null) setState(() => _billDate = d);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          DateFormat('dd MMM').format(_billDate),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Autocomplete<Map<String, dynamic>>(
-                  optionsBuilder: (v) async => v.text.isEmpty
-                      ? []
-                      : await DatabaseHelper.instance.searchClients(v.text),
-                  displayStringForOption: (o) => o['client_name'].toString(),
-                  onSelected: (o) => setState(() {
-                    _nameCtrl.text = o['client_name'];
-                    _phoneCtrl.text = o['client_phone'] ?? "";
-                    _placeCtrl.text = o['client_place'] ?? "";
-                  }),
-                  optionsViewBuilder: (context, onSelected, options) {
-                    return Align(
-                      alignment: Alignment.topLeft,
-                      child: Material(
-                        elevation: 6,
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: Colors.grey.shade200),
-                        ),
-                        child: Container(
-                          width: 280,
-                          constraints: const BoxConstraints(maxHeight: 220),
-                          child: ListView.builder(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            shrinkWrap: true,
-                            itemCount: options.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              final option = options.elementAt(index);
-                              return InkWell(
-                                onTap: () => onSelected(option),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        option['client_name']?.toString() ?? '',
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      if (option['client_place'] != null &&
-                                          option['client_place']
-                                              .toString()
-                                              .isNotEmpty)
-                                        Text(
-                                          option['client_place'].toString(),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                  fieldViewBuilder: (ctx, ctrl, focus, onEdit) {
-                    if (ctrl.text.isEmpty && _nameCtrl.text.isNotEmpty) {
-                      ctrl.text = _nameCtrl.text;
-                    }
-                    return TextFormField(
-                      controller: ctrl,
-                      focusNode: focus,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(
-                        labelText: "Client Name *",
-                        prefixIcon: Icon(Icons.person),
-                      ),
-                      onChanged: (v) => _nameCtrl.text = v,
-                      validator: (v) => v!.isEmpty ? "Required" : null,
-                    );
-                  },
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _phoneCtrl,
-                        keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(labelText: "Phone"),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _placeCtrl,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(labelText: "Place"),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 25),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 820,
+          maxHeight: screenSize.height * 0.90,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 1. Compact Header Bar
+            _buildDialogHeader(),
 
-                _sectionHeader(
-                  "1. Materials Input (Raw)",
-                  icon: Icons.download,
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.orange[50],
-                    border: Border.all(color: Colors.orange.withOpacity(0.5)),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.all(12),
+            // 2. Scrollable Compact Form Body
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ..._materials.asMap().entries.map(
-                        (entry) => _buildItemRow(entry.key, _materials, "Item"),
+                      // Section A: Client & Order Basics
+                      _buildClientSection(),
+                      const SizedBox(height: 14),
+
+                      // Section B: Notes / Work Scope
+                      TextFormField(
+                        controller: _detailsCtrl,
+                        maxLines: 1,
+                        style: const TextStyle(fontSize: 13),
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: _inputDec("Work Details / Scope (Optional)", icon: Icons.description_outlined),
                       ),
-                      TextButton.icon(
-                        onPressed: _addMaterial,
-                        icon: const Icon(Icons.add, color: Colors.deepOrange),
-                        label: const Text(
-                          "Add Item",
-                          style: TextStyle(color: Colors.deepOrange),
-                        ),
-                      ),
+                      const SizedBox(height: 16),
+
+                      // Section C: Dual-Column Materials & Products Grid
+                      if (isWideScreen)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Left Column: Materials Input
+                            Expanded(child: _buildMaterialsCard()),
+                            const SizedBox(width: 14),
+                            // Right Column: Products Output
+                            Expanded(child: _buildProductsCard()),
+                          ],
+                        )
+                      else ...[
+                        _buildMaterialsCard(),
+                        const SizedBox(height: 14),
+                        _buildProductsCard(),
+                      ],
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-
-                _sectionHeader(
-                  "2. Products Output (To Make)",
-                  icon: Icons.upload,
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    border: Border.all(color: Colors.blue.withOpacity(0.5)),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    children: [
-                      ..._products.asMap().entries.map(
-                        (entry) => _buildProductRow(entry.key),
-                      ),
-                      TextButton.icon(
-                        onPressed: _addProduct,
-                        icon: const Icon(Icons.add, color: Colors.blue),
-                        label: const Text(
-                          "Add Product",
-                          style: TextStyle(color: Colors.blue),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 25),
-
-                _sectionHeader("Details"),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _costCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: "Total Cost",
-                          prefixText: "₹ ",
-                          suffixIcon: Icon(
-                            Icons.auto_awesome,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _advanceCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: "Advance",
-                          prefixText: "₹ ",
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: _detailsCtrl,
-                  maxLines: 2,
-                  textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(labelText: "Notes"),
-                ),
-                const SizedBox(height: 30),
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1A237E),
-                      foregroundColor: Colors.white,
-                    ),
-                    onPressed: _save,
-                    child: const Text(
-                      "CREATE JOB",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+
+            // 3. Compact Sticky Financials & Action Footer
+            _buildDialogFooter(),
+          ],
         ),
       ),
     );
   }
 
-  // --- AUTOCOMPLETE FOR MATERIALS ---
-  Widget _buildItemRow(
-    int index,
-    List<Map<String, dynamic>> list,
-    String label,
-  ) {
-    int totalQty = list[index]['qty'];
-    int remaining = _getRemainingQty(list[index]['id'], totalQty);
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+  /// Compact Header Banner
+  Widget _buildDialogHeader() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 14, 16, 14),
+      decoration: const BoxDecoration(
+        color: _primary,
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
+      ),
       child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.add_task_rounded, color: Colors.white, size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            "New Job Order",
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Bill Number Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              "#${_billNoCtrl.text.isEmpty ? '...' : _billNoCtrl.text}",
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+            ),
+          ),
+
+          const Spacer(),
+
+          // Date Selector Pill
+          InkWell(
+            onTap: () async {
+              final d = await showDatePicker(
+                context: context,
+                initialDate: _billDate,
+                firstDate: DateTime(2020),
+                lastDate: DateTime.now(),
+              );
+              if (d != null) setState(() => _billDate = d);
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today, size: 13, color: Colors.white70),
+                  const SizedBox(width: 6),
+                  Text(
+                    DateFormat('dd MMM yyyy').format(_billDate),
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Close (X) Button
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            tooltip: "Close",
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Compact Client & Order Basic Details Row
+  Widget _buildClientSection() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 1. Client Name (Autocomplete)
+        Expanded(
+          flex: 4,
+          child: Autocomplete<Map<String, dynamic>>(
+            optionsBuilder: (v) async => v.text.isEmpty
+                ? []
+                : await DatabaseHelper.instance.searchClients(v.text),
+            displayStringForOption: (o) => o['client_name'].toString(),
+            onSelected: (o) => setState(() {
+              _nameCtrl.text = o['client_name'];
+              _phoneCtrl.text = o['client_phone'] ?? "";
+              _placeCtrl.text = o['client_place'] ?? "";
+            }),
+            optionsViewBuilder: (context, onSelected, options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 6,
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    side: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  child: Container(
+                    width: 260,
+                    constraints: const BoxConstraints(maxHeight: 180),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        final option = options.elementAt(index);
+                        return InkWell(
+                          onTap: () => onSelected(option),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  option['client_name']?.toString() ?? '',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                ),
+                                if (option['client_place'] != null && option['client_place'].toString().isNotEmpty)
+                                  Text(
+                                    option['client_place'].toString(),
+                                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
+            fieldViewBuilder: (ctx, ctrl, focus, onEdit) {
+              if (ctrl.text.isEmpty && _nameCtrl.text.isNotEmpty) {
+                ctrl.text = _nameCtrl.text;
+              }
+              return TextFormField(
+                controller: ctrl,
+                focusNode: focus,
+                style: const TextStyle(fontSize: 13),
+                textCapitalization: TextCapitalization.words,
+                decoration: _inputDec("Client Name *", icon: Icons.person_outline),
+                onChanged: (v) => _nameCtrl.text = v,
+                validator: (v) => v!.isEmpty ? "Required" : null,
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 10),
+
+        // 2. Phone
+        Expanded(
+          flex: 3,
+          child: TextFormField(
+            controller: _phoneCtrl,
+            style: const TextStyle(fontSize: 13),
+            keyboardType: TextInputType.phone,
+            decoration: _inputDec("Phone", icon: Icons.phone_outlined),
+          ),
+        ),
+        const SizedBox(width: 10),
+
+        // 3. Location / Place
+        Expanded(
+          flex: 3,
+          child: TextFormField(
+            controller: _placeCtrl,
+            style: const TextStyle(fontSize: 13),
+            textCapitalization: TextCapitalization.words,
+            decoration: _inputDec("Place", icon: Icons.location_on_outlined),
+          ),
+        ),
+        const SizedBox(width: 10),
+
+        // 4. Deadline Date Picker
+        InkWell(
+          onTap: () async {
+            final d = await showDatePicker(
+              context: context,
+              initialDate: _deadlineDate,
+              firstDate: DateTime.now(),
+              lastDate: DateTime.now().add(const Duration(days: 365)),
+            );
+            if (d != null) setState(() => _deadlineDate = d);
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.flag_outlined, size: 16, color: Colors.deepOrange),
+                const SizedBox(width: 6),
+                Text(
+                  "Due: ${DateFormat('dd MMM').format(_deadlineDate)}",
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Compact Materials Card (Raw Input)
+  Widget _buildMaterialsCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        border: Border.all(color: Colors.orange.withOpacity(0.35)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.inventory_2_outlined, size: 16, color: Colors.deepOrange),
+                  SizedBox(width: 6),
+                  Text(
+                    "Materials Input (Raw)",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF9A3412)),
+                  ),
+                ],
+              ),
+              InkWell(
+                onTap: _addMaterial,
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.add, size: 14, color: Colors.deepOrange),
+                      SizedBox(width: 2),
+                      Text("Add Item", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.deepOrange)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Items List
+          ..._materials.asMap().entries.map((entry) => _buildCompactMaterialRow(entry.key)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactMaterialRow(int index) {
+    int totalQty = _materials[index]['qty'];
+    int remaining = _getRemainingQty(_materials[index]['id'], totalQty);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        children: [
+          // Name Autocomplete
           Expanded(
             flex: 4,
             child: Autocomplete<String>(
               optionsBuilder: (v) => v.text.isEmpty
                   ? const Iterable.empty()
-                  : _knownItems.where(
-                      (o) => o.toLowerCase().contains(v.text.toLowerCase()),
-                    ),
-              onSelected: (s) => setState(() => list[index]['name'] = s),
-              optionsViewBuilder: (context, onSelected, options) {
-                return Align(
-                  alignment: Alignment.topLeft,
-                  child: Material(
-                    elevation: 6,
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    child: Container(
-                      width: 280,
-                      constraints: const BoxConstraints(maxHeight: 220),
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        shrinkWrap: true,
-                        itemCount: options.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          final String option = options.elementAt(index);
-                          return InkWell(
-                            onTap: () => onSelected(option),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              child: Text(
-                                option,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                );
-              },
+                  : _knownItems.where((o) => o.toLowerCase().contains(v.text.toLowerCase())),
+              onSelected: (s) => setState(() => _materials[index]['name'] = s),
               fieldViewBuilder: (ctx, ctrl, focus, submit) {
-                if (ctrl.text != list[index]['name']) {
-                  ctrl.text = list[index]['name'];
+                if (ctrl.text != _materials[index]['name']) {
+                  ctrl.text = _materials[index]['name'];
                 }
                 return TextFormField(
                   controller: ctrl,
                   focusNode: focus,
+                  style: const TextStyle(fontSize: 12),
                   textCapitalization: TextCapitalization.words,
-                  decoration: _fieldDec("$label Name"),
-                  onChanged: (v) => list[index]['name'] = v,
+                  decoration: _miniFieldDec("Material / Item Name"),
+                  onChanged: (v) => _materials[index]['name'] = v,
                 );
               },
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
 
+          // Quantity
           Expanded(
             flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextFormField(
-                  initialValue: totalQty == 0 ? null : totalQty.toString(),
-                  keyboardType: TextInputType.number,
-                  decoration: _fieldDec("Qty"),
-                  onChanged: (v) =>
-                      setState(() => list[index]['qty'] = int.tryParse(v) ?? 0),
-                ),
-                if (totalQty > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4, left: 4),
-                    child: Text(
-                      "Rem: $remaining",
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: remaining < 0
-                            ? Colors.red
-                            : (remaining == 0
-                                  ? Colors.green
-                                  : Colors.orange[800]),
-                      ),
-                    ),
-                  ),
-              ],
+            child: TextFormField(
+              initialValue: _materials[index]['qty'] == 0 ? null : _materials[index]['qty'].toString(),
+              keyboardType: TextInputType.number,
+              style: const TextStyle(fontSize: 12),
+              decoration: _miniFieldDec("Qty"),
+              onChanged: (v) => setState(() => _materials[index]['qty'] = int.tryParse(v) ?? 0),
+            ),
+          ),
+          const SizedBox(width: 6),
+
+          // Remaining Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+            decoration: BoxDecoration(
+              color: remaining > 0 ? Colors.green[50] : Colors.grey[100],
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: remaining > 0 ? Colors.green[200]! : Colors.grey[300]!),
+            ),
+            child: Text(
+              "Left: $remaining",
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: remaining > 0 ? Colors.green[800] : Colors.grey[600]),
             ),
           ),
 
-          if (list.length > 1)
+          if (_materials.length > 1)
             IconButton(
-              icon: const Icon(Icons.remove_circle, color: Colors.red),
-              onPressed: () => setState(() {
-                String delId = list[index]['id'];
-                for (var out in _products) {
-                  List links = out['linked_materials'] ?? [];
-                  links.removeWhere((l) => l['id'] == delId);
-                }
-                list.removeAt(index);
-              }),
+              icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 16),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () => setState(() => _materials.removeAt(index)),
             ),
         ],
       ),
     );
   }
 
-  // --- AUTOCOMPLETE WITH PRICE AUTO-FILL FOR PRODUCTS ---
-  Widget _buildProductRow(int index) {
+  /// Compact Products Card (To Make)
+  Widget _buildProductsCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        border: Border.all(color: Colors.blue.withOpacity(0.35)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.precision_manufacturing_outlined, size: 16, color: Color(0xFF1D4ED8)),
+                  SizedBox(width: 6),
+                  Text(
+                    "Products Output (To Make)",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E40AF)),
+                  ),
+                ],
+              ),
+              InkWell(
+                onTap: _addProduct,
+                borderRadius: BorderRadius.circular(6),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.add, size: 14, color: Color(0xFF1D4ED8)),
+                      SizedBox(width: 2),
+                      Text("Add Product", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8))),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Products List
+          ..._products.asMap().entries.map((entry) => _buildCompactProductRow(entry.key)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactProductRow(int index) {
     final List links = _products[index]['linked_materials'] ?? [];
     final linkedCount = links.length;
     final isLinked = linkedCount > 0;
 
-    // --- CALCULATE ROW TOTAL ---
     int qty = _products[index]['qty'] ?? 0;
     double rate = _products[index]['rate'] ?? 0.0;
     double rowTotal = qty * rate;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 8.0),
       child: Column(
         children: [
           Row(
             children: [
+              // Product Name Autocomplete
               Expanded(
                 flex: 4,
                 child: Autocomplete<String>(
                   optionsBuilder: (v) => v.text.isEmpty
                       ? const Iterable.empty()
-                      : _knownItems.where(
-                          (o) => o.toLowerCase().contains(v.text.toLowerCase()),
-                        ),
+                      : _knownItems.where((o) => o.toLowerCase().contains(v.text.toLowerCase())),
                   onSelected: (s) {
                     setState(() {
                       _products[index]['name'] = s;
@@ -786,48 +842,6 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                       }
                     });
                   },
-                  optionsViewBuilder: (context, onSelected, options) {
-                    return Align(
-                      alignment: Alignment.topLeft,
-                      child: Material(
-                        elevation: 6,
-                        color: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: Colors.grey.shade200),
-                        ),
-                        child: Container(
-                          width: 280,
-                          constraints: const BoxConstraints(maxHeight: 220),
-                          child: ListView.builder(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            shrinkWrap: true,
-                            itemCount: options.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              final String option = options.elementAt(index);
-                              return InkWell(
-                                onTap: () => onSelected(option),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
-                                  child: Text(
-                                    option,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    );
-                  },
                   fieldViewBuilder: (ctx, ctrl, focus, submit) {
                     if (ctrl.text != _products[index]['name']) {
                       ctrl.text = _products[index]['name'];
@@ -835,18 +849,18 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                     return TextFormField(
                       controller: ctrl,
                       focusNode: focus,
+                      style: const TextStyle(fontSize: 12),
                       textCapitalization: TextCapitalization.words,
-                      decoration: _fieldDec("Product Name"),
+                      decoration: _miniFieldDec("Product Name"),
                       onChanged: (v) {
                         _products[index]['name'] = v;
-                        final trimmed = v.trim();
-                        final matchedKey = _historicalRates.keys.firstWhere(
-                          (k) => k.toLowerCase() == trimmed.toLowerCase(),
+                        final matched = _historicalRates.keys.firstWhere(
+                          (k) => k.toLowerCase() == v.trim().toLowerCase(),
                           orElse: () => "",
                         );
-                        if (matchedKey.isNotEmpty) {
+                        if (matched.isNotEmpty) {
                           setState(() {
-                            _products[index]['rate'] = _historicalRates[matchedKey];
+                            _products[index]['rate'] = _historicalRates[matched];
                             _calculateTotal();
                           });
                         }
@@ -855,18 +869,17 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                   },
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
+
               // Qty
               Expanded(
                 flex: 2,
                 child: TextFormField(
-                  initialValue: _products[index]['qty'] == 0
-                      ? null
-                      : _products[index]['qty'].toString(),
+                  initialValue: _products[index]['qty'] == 0 ? null : _products[index]['qty'].toString(),
                   keyboardType: TextInputType.number,
-                  decoration: _fieldDec("Qty"),
+                  style: const TextStyle(fontSize: 12),
+                  decoration: _miniFieldDec("Qty"),
                   onChanged: (v) {
-                    // Update state so the rowTotal instantly recalcs
                     setState(() {
                       _products[index]['qty'] = int.tryParse(v) ?? 0;
                       _calculateTotal();
@@ -874,23 +887,18 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                   },
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
+
               // Rate
               Expanded(
                 flex: 2,
                 child: TextFormField(
-                  key: ValueKey(
-                    "rate_${_products[index]['id']}_${_products[index]['name']}",
-                  ),
-                  initialValue: _products[index]['rate'] == 0.0
-                      ? null
-                      : _products[index]['rate'].toString(),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: _fieldDec("Rate"),
+                  key: ValueKey("rate_${_products[index]['id']}_${_products[index]['name']}"),
+                  initialValue: _products[index]['rate'] == 0.0 ? null : _products[index]['rate'].toString(),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: const TextStyle(fontSize: 12),
+                  decoration: _miniFieldDec("₹ Rate"),
                   onChanged: (v) {
-                    // Update state so the rowTotal instantly recalcs
                     setState(() {
                       _products[index]['rate'] = double.tryParse(v) ?? 0.0;
                       _calculateTotal();
@@ -898,9 +906,12 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
                   },
                 ),
               ),
+
               if (_products.length > 1)
                 IconButton(
-                  icon: const Icon(Icons.remove_circle, color: Colors.red),
+                  icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent, size: 16),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                   onPressed: () => setState(() {
                     _products.removeAt(index);
                     _calculateTotal();
@@ -909,55 +920,34 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
             ],
           ),
 
-          // --- ROW TOTAL & LINKING BUTTON ---
+          // Mini Sub-row: Links & Total
           Padding(
-            padding: const EdgeInsets.only(top: 8, left: 4),
+            padding: const EdgeInsets.only(top: 4, left: 2, right: 2),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Link Button
                 InkWell(
                   onTap: () => _openLinkDialog(index),
+                  borderRadius: BorderRadius.circular(4),
                   child: Row(
                     children: [
-                      Transform.rotate(
-                        angle: 1.57,
-                        child: Icon(
-                          Icons.link,
-                          size: 16,
-                          color: isLinked
-                              ? const Color(0xFF1A237E)
-                              : Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
+                      Icon(Icons.link, size: 13, color: isLinked ? _primary : Colors.grey),
+                      const SizedBox(width: 4),
                       Text(
-                        isLinked
-                            ? "Uses $linkedCount materials"
-                            : "Link Materials...",
+                        isLinked ? "Uses $linkedCount materials" : "Link materials...",
                         style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: isLinked
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isLinked
-                              ? const Color(0xFF1A237E)
-                              : Colors.grey[600],
+                          fontSize: 11,
+                          fontWeight: isLinked ? FontWeight.bold : FontWeight.normal,
+                          color: isLinked ? _primary : Colors.grey[600],
                         ),
                       ),
                     ],
                   ),
                 ),
-
-                // Item Total
                 if (rowTotal > 0)
                   Text(
                     "= ₹${rowTotal.toStringAsFixed(0)}",
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.green[700],
-                    ),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green[800]),
                   ),
               ],
             ),
@@ -967,35 +957,151 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
     );
   }
 
-  InputDecoration _fieldDec(String label) => InputDecoration(
+  /// Compact Sticky Dialog Footer
+  Widget _buildDialogFooter() {
+    double cost = double.tryParse(_costCtrl.text) ?? 0.0;
+    double advance = double.tryParse(_advanceCtrl.text) ?? 0.0;
+    double balance = cost - advance;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+      ),
+      child: Row(
+        children: [
+          // Total Cost Input
+          SizedBox(
+            width: 130,
+            child: TextFormField(
+              controller: _costCtrl,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                labelText: "Total Cost",
+                prefixText: "₹ ",
+                isDense: true,
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+          ),
+          const SizedBox(width: 10),
+
+          // Advance Input
+          SizedBox(
+            width: 120,
+            child: TextFormField(
+              controller: _advanceCtrl,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                labelText: "Advance",
+                prefixText: "₹ ",
+                isDense: true,
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+          ),
+          const SizedBox(width: 10),
+
+          // Balance Due Pill
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: balance > 0 ? Colors.amber[50] : Colors.green[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: balance > 0 ? Colors.amber[300]! : Colors.green[300]!),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text("Balance Due", style: TextStyle(fontSize: 9, color: Colors.grey)),
+                Text(
+                  "₹${balance.toStringAsFixed(0)}",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: balance > 0 ? Colors.amber[900] : Colors.green[900],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Spacer(),
+
+          // Cancel
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          const SizedBox(width: 10),
+
+          // Submit CTA
+          ElevatedButton.icon(
+            onPressed: _save,
+            icon: const Icon(Icons.check_circle_outline, size: 18),
+            label: const Text(
+              "CREATE JOB ORDER",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _accent,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _inputDec(String label, {IconData? icon}) => InputDecoration(
     labelText: label,
-    fillColor: Colors.white,
-    filled: true,
+    prefixIcon: icon != null ? Icon(icon, size: 18) : null,
     isDense: true,
-    contentPadding: const EdgeInsets.all(12),
+    filled: true,
+    fillColor: Colors.white,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(8),
-      borderSide: BorderSide.none,
+      borderSide: BorderSide(color: Colors.grey.shade300),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: BorderSide(color: Colors.grey.shade300),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: _primary, width: 1.5),
     ),
   );
 
-  Widget _sectionHeader(String title, {IconData? icon}) => Padding(
-    padding: const EdgeInsets.only(bottom: 10),
-    child: Row(
-      children: [
-        if (icon != null) ...[
-          Icon(icon, size: 20, color: Colors.grey[700]),
-          const SizedBox(width: 8),
-        ],
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey[700],
-          ),
-        ),
-      ],
+  InputDecoration _miniFieldDec(String label) => InputDecoration(
+    labelText: label,
+    isDense: true,
+    filled: true,
+    fillColor: Colors.white,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(6),
+      borderSide: BorderSide(color: Colors.grey.shade300),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(6),
+      borderSide: BorderSide(color: Colors.grey.shade300),
     ),
   );
 
@@ -1073,6 +1179,6 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
     }
 
     ref.invalidate(activeJobsProvider);
-    if (mounted) Navigator.pop(context);
+    if (mounted) Navigator.pop(context, true);
   }
 }
