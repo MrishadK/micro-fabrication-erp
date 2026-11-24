@@ -18,7 +18,9 @@ DefaultDirName={autopf}\MICRO Manager
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 
-; In-place updater settings: remembers previous user install directory and settings
+; In-place updater & directory settings: allow user to browse and change destination
+DisableDirPage=no
+AlwaysShowDirOnReadyPage=yes
 UsePreviousAppDir=yes
 UsePreviousGroup=yes
 UsePreviousTasks=yes
@@ -44,9 +46,8 @@ WizardSizePercent=100
 ArchitecturesInstallIn64BitMode=x64compatible
 ArchitecturesAllowed=x64compatible
 
-; Privilege elevation: install for current user or all users cleanly
-PrivilegesRequired=lowest
-PrivilegesRequiredOverridesAllowed=dialog
+; Require Administrator privileges for Program Files write access and file replacement
+PrivilegesRequired=admin
 DisableProgramGroupPage=yes
 
 ; Windows Explorer File Metadata & Properties (Publishable Signature Info)
