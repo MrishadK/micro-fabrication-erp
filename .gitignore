@@ -58,6 +58,9 @@ upload-keystore.jks
 # Environment variables & secrets
 .env
 .env.*
+desktop_oauth.json
+.desktop_oauth.json
+*client_secret*.json
 *.env
 
 # Google Services & OAuth (Credentials)

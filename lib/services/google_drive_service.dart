@@ -19,8 +19,10 @@ class GoogleDriveService {
   // --- CONFIGURATION ---
   static const String _folderName = "MICRO BACKUP";
   static const int _maxBackups = 30; // Maximum number of backups to keep
-  static const String _desktopClientId =
-      '540848984717-ebtnd8n20g4u6eg3mkv30jh2k8jl15iu.apps.googleusercontent.com';
+  static const String _defaultDesktopClientId = String.fromEnvironment(
+    'DESKTOP_GOOGLE_CLIENT_ID',
+    defaultValue: '540848984717-oc2fa8bvei7jjk55qk3felb5aavflhk2.apps.googleusercontent.com',
+  );
 
   static final List<String> _scopes = [
     drive.DriveApi.driveFileScope,
@@ -73,18 +75,73 @@ class GoogleDriveService {
     }
   }
 
+  /// Load desktop OAuth credentials from SharedPreferences, desktop_oauth.json, or environment
+  Future<Map<String, String>> _loadDesktopCredentials() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? clientId = prefs.getString('custom_desktop_client_id')?.trim();
+    String? clientSecret = prefs.getString('custom_desktop_client_secret')?.trim();
+
+    if (clientId != null && clientId.isNotEmpty) {
+      return {
+        'client_id': clientId,
+        'client_secret': clientSecret ?? '',
+      };
+    }
+
+    // Try reading desktop_oauth.json from local disk if not yet saved in prefs
+    try {
+      final potentialPaths = [
+        'desktop_oauth.json',
+        p.join(Directory.current.path, 'desktop_oauth.json'),
+        p.join(File(Platform.resolvedExecutable).parent.path, 'desktop_oauth.json'),
+      ];
+
+      for (final path in potentialPaths) {
+        final file = File(path);
+        if (file.existsSync()) {
+          final content = await file.readAsString();
+          final parsed = jsonDecode(content);
+          if (parsed is Map) {
+            final Map credMap = (parsed['installed'] is Map)
+                ? parsed['installed']
+                : parsed;
+            final fileClientId = credMap['client_id']?.toString().trim();
+            final fileClientSecret = credMap['client_secret']?.toString().trim();
+            if (fileClientId != null && fileClientId.isNotEmpty) {
+              clientId = fileClientId;
+              clientSecret = fileClientSecret;
+              // Cache into prefs for subsequent runs
+              await prefs.setString('custom_desktop_client_id', clientId);
+              if (clientSecret != null && clientSecret.isNotEmpty) {
+                await prefs.setString('custom_desktop_client_secret', clientSecret);
+              }
+              break;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("Error reading desktop_oauth.json: $e");
+    }
+
+    clientId ??= Platform.environment['DESKTOP_GOOGLE_CLIENT_ID'] ?? _defaultDesktopClientId;
+    clientSecret ??= Platform.environment['DESKTOP_GOOGLE_CLIENT_SECRET'];
+
+    return {
+      'client_id': clientId,
+      'client_secret': clientSecret ?? '',
+    };
+  }
+
   /// Helper to get configured ClientId
   Future<ClientId> _getConfiguredClientId() async {
-    final prefs = await SharedPreferences.getInstance();
-    final customId = prefs.getString('custom_desktop_client_id');
-    final customSecret = prefs.getString('custom_desktop_client_secret');
-    final activeId = (customId != null && customId.trim().isNotEmpty)
-        ? customId.trim()
-        : _desktopClientId;
-    final activeSecret = (customSecret != null && customSecret.trim().isNotEmpty)
-        ? customSecret.trim()
-        : null;
-    return ClientId(activeId, activeSecret);
+    final creds = await _loadDesktopCredentials();
+    final clientId = creds['client_id'] ?? _defaultDesktopClientId;
+    final clientSecret = creds['client_secret'];
+    return ClientId(
+      clientId,
+      (clientSecret != null && clientSecret.isNotEmpty) ? clientSecret : null,
+    );
   }
 
   Future<void> setCustomCredentials({required String clientId, String? clientSecret}) async {
@@ -98,19 +155,23 @@ class GoogleDriveService {
   }
 
   Future<String> getActiveClientId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('custom_desktop_client_id') ?? _desktopClientId;
+    final creds = await _loadDesktopCredentials();
+    return creds['client_id'] ?? _defaultDesktopClientId;
   }
 
   Future<String?> getActiveClientSecret() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('custom_desktop_client_secret');
+    final creds = await _loadDesktopCredentials();
+    final secret = creds['client_secret'];
+    return (secret != null && secret.isNotEmpty) ? secret : null;
   }
 
   /// Desktop Sign In via Loopback OAuth
   Future<bool> _signInDesktop() async {
     try {
       final clientId = await _getConfiguredClientId();
+      _desktopAuthClient?.close();
+      _desktopAuthClient = null;
+
       final client = await clientViaUserConsent(
         clientId,
         _scopes,
