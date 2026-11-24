@@ -44,7 +44,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     try {
       final success = await GoogleDriveService.instance.signIn();
       if (mounted) {
-        setState(() => _isConnectingDrive = false);
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -65,7 +64,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isConnectingDrive = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Connection error: $e"),
@@ -73,6 +71,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isConnectingDrive = false);
       }
     }
   }
@@ -841,15 +843,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             width: double.infinity,
             height: 30,
             child: _isConnectingDrive
-                ? const Center(
-                    child: SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       ),
-                    ),
+                      SizedBox(width: 8),
+                      Text(
+                        "Connecting...",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   )
                 : OutlinedButton.icon(
                     onPressed: () {
@@ -860,11 +874,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       }
                     },
                     icon: Icon(
-                      isSignedIn ? Icons.cloud_done_rounded : Icons.login_rounded,
+                      isSignedIn ? Icons.cloud_sync_rounded : Icons.login_rounded,
                       size: 14,
                     ),
                     label: Text(
-                      isSignedIn ? "Cloud Actions" : "Connect Drive",
+                      isSignedIn ? "Backup & Restore" : "Connect Drive",
                       style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                     style: OutlinedButton.styleFrom(
