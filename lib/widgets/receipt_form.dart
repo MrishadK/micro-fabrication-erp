@@ -458,32 +458,35 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
           const Spacer(),
 
           // Date Selector Pill
-          InkWell(
-            onTap: () async {
-              final d = await showDatePicker(
-                context: context,
-                initialDate: _billDate,
-                firstDate: DateTime(2020),
-                lastDate: DateTime.now(),
-              );
-              if (d != null) setState(() => _billDate = d);
-            },
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.calendar_today, size: 13, color: Colors.white70),
-                  const SizedBox(width: 6),
-                  Text(
-                    DateFormat('dd MMM yyyy').format(_billDate),
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                  ),
-                ],
+          Tooltip(
+            message: "Change Bill Date",
+            child: InkWell(
+              onTap: () async {
+                final d = await showDatePicker(
+                  context: context,
+                  initialDate: _billDate,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime.now(),
+                );
+                if (d != null) setState(() => _billDate = d);
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 13, color: Colors.white70),
+                    const SizedBox(width: 6),
+                    Text(
+                      "Bill Date: ${DateFormat('dd MMM yyyy').format(_billDate)}",
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
