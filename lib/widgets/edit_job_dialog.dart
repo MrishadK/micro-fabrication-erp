@@ -23,6 +23,7 @@ class _EditJobDialogState extends State<EditJobDialog> {
   late TextEditingController _billNoCtrl;
   late TextEditingController _nameCtrl;
   late TextEditingController _phoneCtrl;
+  late TextEditingController _placeCtrl;
   late TextEditingController _costCtrl;
   late TextEditingController _detailsCtrl;
   late TextEditingController _advanceCtrl;
@@ -52,6 +53,9 @@ class _EditJobDialogState extends State<EditJobDialog> {
     );
     _nameCtrl = TextEditingController(text: widget.job['client_name']);
     _phoneCtrl = TextEditingController(text: widget.job['client_phone']);
+    _placeCtrl = TextEditingController(
+      text: widget.job['client_place']?.toString() ?? '',
+    );
     _costCtrl = TextEditingController(
       text: widget.job['total_cost'].toString(),
     );
@@ -399,6 +403,7 @@ class _EditJobDialogState extends State<EditJobDialog> {
     _billNoCtrl.dispose();
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
+    _placeCtrl.dispose();
     _costCtrl.dispose();
     _detailsCtrl.dispose();
     _advanceCtrl.dispose();
@@ -903,6 +908,7 @@ class _EditJobDialogState extends State<EditJobDialog> {
           controller: _nameCtrl,
           decoration: _inputDec("Customer Name", Icons.person_rounded),
           validator: (v) => v!.isEmpty ? "Enter name" : null,
+          textCapitalization: TextCapitalization.words,
         ),
         const SizedBox(height: 15),
         Row(
@@ -920,11 +926,20 @@ class _EditJobDialogState extends State<EditJobDialog> {
             const SizedBox(width: 12),
             Expanded(
               child: TextFormField(
-                controller: _billNoCtrl,
-                decoration: _inputDec("Bill Number", Icons.tag_rounded),
+                controller: _placeCtrl,
+                decoration: _inputDec(
+                  "Place / Location",
+                  Icons.location_on_rounded,
+                ),
+                textCapitalization: TextCapitalization.words,
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 15),
+        TextFormField(
+          controller: _billNoCtrl,
+          decoration: _inputDec("Bill Number", Icons.tag_rounded),
         ),
       ],
     );
@@ -1221,6 +1236,7 @@ class _EditJobDialogState extends State<EditJobDialog> {
         'id': widget.job['id'],
         'bill_no': _billNoCtrl.text.trim(),
         'client_name': _nameCtrl.text.trim(),
+        'client_place': _placeCtrl.text.trim(),
         'client_phone': _phoneCtrl.text.trim(),
         'items': itemsJson,
         'material_brought': matSummary,
