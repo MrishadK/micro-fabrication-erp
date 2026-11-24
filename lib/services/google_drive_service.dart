@@ -24,8 +24,6 @@ class GoogleDriveService {
 
   static final List<String> _scopes = [
     drive.DriveApi.driveFileScope,
-    'https://www.googleapis.com/auth/userinfo.profile',
-    'https://www.googleapis.com/auth/userinfo.email',
   ];
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
@@ -75,10 +73,44 @@ class GoogleDriveService {
     }
   }
 
+  /// Helper to get configured ClientId
+  Future<ClientId> _getConfiguredClientId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final customId = prefs.getString('custom_desktop_client_id');
+    final customSecret = prefs.getString('custom_desktop_client_secret');
+    final activeId = (customId != null && customId.trim().isNotEmpty)
+        ? customId.trim()
+        : _desktopClientId;
+    final activeSecret = (customSecret != null && customSecret.trim().isNotEmpty)
+        ? customSecret.trim()
+        : null;
+    return ClientId(activeId, activeSecret);
+  }
+
+  Future<void> setCustomCredentials({required String clientId, String? clientSecret}) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('custom_desktop_client_id', clientId.trim());
+    if (clientSecret != null && clientSecret.trim().isNotEmpty) {
+      await prefs.setString('custom_desktop_client_secret', clientSecret.trim());
+    } else {
+      await prefs.remove('custom_desktop_client_secret');
+    }
+  }
+
+  Future<String> getActiveClientId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('custom_desktop_client_id') ?? _desktopClientId;
+  }
+
+  Future<String?> getActiveClientSecret() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('custom_desktop_client_secret');
+  }
+
   /// Desktop Sign In via Loopback OAuth
   Future<bool> _signInDesktop() async {
     try {
-      final clientId = ClientId(_desktopClientId, null);
+      final clientId = await _getConfiguredClientId();
       final client = await clientViaUserConsent(
         clientId,
         _scopes,
@@ -111,7 +143,7 @@ class GoogleDriveService {
         client.credentials.accessToken.expiry.toIso8601String(),
       );
 
-      // Fetch user profile from Google UserInfo endpoint
+      // Fetch user profile from Google Drive endpoint
       await _fetchDesktopUserProfile(client);
       return true;
     } catch (e) {
@@ -142,7 +174,7 @@ class GoogleDriveService {
             _scopes,
           );
 
-          final clientId = ClientId(_desktopClientId, null);
+          final clientId = await _getConfiguredClientId();
           _desktopAuthClient = autoRefreshingClient(
             clientId,
             credentials,
@@ -162,6 +194,24 @@ class GoogleDriveService {
   }
 
   Future<void> _fetchDesktopUserProfile(http.Client client) async {
+    try {
+      final driveApi = drive.DriveApi(client);
+      final about = await driveApi.about.get($fields: 'user');
+      if (about.user != null) {
+        _cachedDisplayName = about.user!.displayName;
+        _cachedEmail = about.user!.emailAddress;
+        _cachedPhotoUrl = about.user!.photoLink;
+        await _saveProfileLocally(
+          _cachedDisplayName,
+          _cachedEmail,
+          _cachedPhotoUrl,
+        );
+        return;
+      }
+    } catch (e) {
+      debugPrint("Could not fetch user profile via Drive about: $e");
+    }
+
     try {
       final response = await client.get(
         Uri.parse('https://www.googleapis.com/oauth2/v2/userinfo'),

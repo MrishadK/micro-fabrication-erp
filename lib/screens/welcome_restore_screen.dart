@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/google_drive_service.dart';
 import '../services/google_drive_service_desktop.dart';
 
@@ -44,13 +45,10 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
       parent: _animController,
       curve: Curves.easeOut,
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.05),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOutCubic,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+        );
     _animController.forward();
   }
 
@@ -84,7 +82,11 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
                 color: const Color(0xFF4285F4).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.phone_android_rounded, color: Color(0xFF4285F4), size: 24),
+              child: const Icon(
+                Icons.phone_android_rounded,
+                color: Color(0xFF4285F4),
+                size: 24,
+              ),
             ),
             const SizedBox(width: 12),
             const Expanded(
@@ -101,13 +103,18 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
           children: [
             const Text(
               'Before restoring on PC, please verify that you tapped "BACKUP NOW" on your Android phone so Google Drive has your latest data:',
-              style: TextStyle(fontSize: 13, height: 1.4, color: Color(0xFF334155)),
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: Color(0xFF334155),
+              ),
             ),
             const SizedBox(height: 14),
             _buildDialogStep(
               number: '1',
               title: 'Open Micro on Android phone',
-              subtitle: 'Ensure you are signed in with the same Google Account.',
+              subtitle:
+                  'Ensure you are signed in with the same Google Account.',
             ),
             const SizedBox(height: 8),
             _buildDialogStep(
@@ -131,7 +138,11 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
               ),
               child: Row(
                 children: const [
-                  Icon(Icons.wifi_off_rounded, size: 16, color: Colors.blueGrey),
+                  Icon(
+                    Icons.wifi_off_rounded,
+                    size: 16,
+                    color: Colors.blueGrey,
+                  ),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -157,7 +168,9 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
               backgroundColor: const Color(0xFF4285F4),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
           ),
         ],
@@ -196,7 +209,11 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
             children: [
               Text(
                 title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF1E293B)),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  color: Color(0xFF1E293B),
+                ),
               ),
               Text(
                 subtitle,
@@ -225,13 +242,15 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
           _isRestoring = false;
           _showError = true;
           _errorText =
-              'Google Sign-In was cancelled or could not be completed.';
+              'Google Sign-In blocked (Error 400: invalid_request). Google Cloud requires a Client ID of type "Desktop app". Click "Fix Client ID" below or restore via "Pick Local .db File".';
           _statusText = '';
         });
         return;
       }
 
-      setState(() => _statusText = 'Scanning Google Drive for "MICRO BACKUP"...');
+      setState(
+        () => _statusText = 'Scanning Google Drive for "MICRO BACKUP"...',
+      );
 
       // Attempt to restore latest backup
       final success = await GoogleDriveService.instance.restoreLatestBackup();
@@ -257,11 +276,14 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
         });
       }
     } catch (e) {
-      final isOffline = e.toString().toLowerCase().contains('socketexception') ||
+      final isOffline =
+          e.toString().toLowerCase().contains('socketexception') ||
           e.toString().toLowerCase().contains('failed host lookup') ||
           e.toString().toLowerCase().contains('network is unreachable') ||
           e.toString().toLowerCase().contains('clientexception') ||
-          e.toString().toLowerCase().contains('no address associated with hostname') ||
+          e.toString().toLowerCase().contains(
+            'no address associated with hostname',
+          ) ||
           e.toString().toLowerCase().contains('os error');
       setState(() {
         _isRestoring = false;
@@ -283,8 +305,8 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
     });
 
     try {
-      final success =
-          await GoogleDriveServiceDesktop.instance.restoreFromLocalFile();
+      final success = await GoogleDriveServiceDesktop.instance
+          .restoreFromLocalFile();
 
       if (success) {
         setState(() {
@@ -365,6 +387,110 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
             ),
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Got it!'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showCredentialsConfigDialog() async {
+    final activeId = await GoogleDriveService.instance.getActiveClientId();
+    final activeSecret = await GoogleDriveService.instance.getActiveClientSecret();
+    final idCtrl = TextEditingController(text: activeId);
+    final secretCtrl = TextEditingController(text: activeSecret ?? '');
+
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.key_rounded, color: Color(0xFF1A237E)),
+            SizedBox(width: 10),
+            Text("Google OAuth Credentials", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+        content: SizedBox(
+          width: 480,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "To fix 'Error 400: invalid_request', create an OAuth Client ID of type 'Desktop app' in your Google Cloud Console:",
+                style: TextStyle(fontSize: 12.5, height: 1.35, color: Color(0xFF334155)),
+              ),
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: () async {
+                  final uri = Uri.parse('https://console.cloud.google.com/apis/credentials?project=micro-487214');
+                  if (await canLaunchUrl(uri)) await launchUrl(uri);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFBFDBFE)),
+                  ),
+                  child: Row(
+                    children: const [
+                      Icon(Icons.open_in_new, size: 16, color: Color(0xFF1D4ED8)),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "Open Google Cloud Credentials (micro-487214)",
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: idCtrl,
+                style: const TextStyle(fontSize: 12),
+                decoration: InputDecoration(
+                  labelText: "Desktop OAuth Client ID",
+                  hintText: "....apps.googleusercontent.com",
+                  isDense: true,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: secretCtrl,
+                style: const TextStyle(fontSize: 12),
+                decoration: InputDecoration(
+                  labelText: "Client Secret (Optional for desktop)",
+                  hintText: "GOCSPX-...",
+                  isDense: true,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await GoogleDriveService.instance.setCustomCredentials(
+                clientId: idCtrl.text.trim(),
+                clientSecret: secretCtrl.text.trim(),
+              );
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Credentials saved! Click Restore from Google Drive to retry.")),
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white),
+            child: const Text("Save & Apply"),
           ),
         ],
       ),
@@ -454,17 +580,11 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
       child: Row(
         children: [
           // Left Hero Panel
-          Expanded(
-            flex: 5,
-            child: _buildLeftHeroPanel(),
-          ),
+          Expanded(flex: 5, child: _buildLeftHeroPanel()),
           // Vertical Divider
           Container(width: 1, color: Colors.grey.withOpacity(0.15)),
           // Right Interactive Onboarding Panel
-          Expanded(
-            flex: 6,
-            child: _buildRightActionsPanel(),
-          ),
+          Expanded(flex: 6, child: _buildRightActionsPanel()),
         ],
       ),
     );
@@ -497,10 +617,7 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            _primary,
-            const Color(0xFF0D144A),
-          ],
+          colors: [_primary, const Color(0xFF0D144A)],
         ),
       ),
       child: Column(
@@ -546,8 +663,10 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: _accent,
                       borderRadius: BorderRadius.circular(6),
@@ -633,7 +752,10 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
                 onTap: _showSyncHelpDialog,
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   child: Row(
                     children: [
                       Icon(
@@ -781,10 +903,7 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
                   const SizedBox(height: 4),
                   Text(
                     'Restore from your Android phone or begin fresh',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -813,31 +932,51 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.error_outline, color: Colors.red[700], size: 20),
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.red[700],
+                        size: 20,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           _errorText,
-                          style: TextStyle(color: Colors.red[900], fontSize: 13, height: 1.3),
+                          style: TextStyle(
+                            color: Colors.red[900],
+                            fontSize: 13,
+                            height: 1.3,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  if (_errorText.contains('Import Local Backup File') || _errorText.contains('offline') || _errorText.contains('internet')) ...[
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton.icon(
-                        onPressed: _handleLocalFileRestore,
-                        icon: const Icon(Icons.folder_open, size: 16),
-                        label: const Text('Pick Local .db File Instead'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.red[900],
-                          textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Wrap(
+                      spacing: 8,
+                      children: [
+                        TextButton.icon(
+                          onPressed: _showCredentialsConfigDialog,
+                          icon: const Icon(Icons.settings, size: 15),
+                          label: const Text('Fix Client ID'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red[900],
+                            textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
                         ),
-                      ),
+                        TextButton.icon(
+                          onPressed: _handleLocalFileRestore,
+                          icon: const Icon(Icons.folder_open, size: 15),
+                          label: const Text('Pick Local .db File'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red[900],
+                            textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),
@@ -1070,18 +1209,12 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
                       const SizedBox(height: 2),
                       Text(
                         'Pick a fab_shop_pro.db or backup_*.db file from PC or USB',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
                 ),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Colors.grey,
-                ),
+                const Icon(Icons.chevron_right_rounded, color: Colors.grey),
               ],
             ),
           ),
@@ -1095,11 +1228,7 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
     return Center(
       child: TextButton.icon(
         onPressed: _isRestoring ? null : _completeSetup,
-        icon: Icon(
-          Icons.add_task_rounded,
-          size: 18,
-          color: Colors.grey[700],
-        ),
+        icon: Icon(Icons.add_task_rounded, size: 18, color: Colors.grey[700]),
         label: Text(
           'Start Fresh — Set up new database',
           style: TextStyle(
