@@ -179,14 +179,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text("Restore Backup?"),
-        content: const Text("This will replace current local data with your latest Google Drive backup."),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.phone_android_rounded, color: Color(0xFF1A237E)),
+            SizedBox(width: 10),
+            Text("Restore from Android Backup?"),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              "Please ensure you tapped 'BACKUP NOW' on your Android phone (Settings → Cloud Sync) first so your latest records are in Google Drive.",
+              style: TextStyle(fontSize: 13, height: 1.4),
+            ),
+            SizedBox(height: 12),
+            Text(
+              "Restoring will update your PC workstation with that cloud backup.",
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("Cancel")),
           ElevatedButton(
             onPressed: () => Navigator.pop(c, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange[800], foregroundColor: Colors.white),
-            child: const Text("Restore Now"),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white),
+            child: const Text("Yes, Restore Now"),
           ),
         ],
       ),
