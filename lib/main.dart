@@ -5,9 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:window_manager/legacy.dart';
 
-//NEW: Imports for the lock screen
+// NEW: Imports for secure 6-digit PIN app lock
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:local_auth/local_auth.dart';
+import 'services/app_lock_service.dart';
+import 'screens/pin_lock_screen.dart';
 
 import 'screens/dashboard_screen.dart';
 import 'screens/welcome_restore_screen.dart';
@@ -216,7 +217,7 @@ class _FabAppState extends State<FabApp> with WindowListener {
 }
 
 // ========================================================
-//   🔥 WINDOWS APPLICATION ROOT (Splash -> Workspace) 🔥
+//   🔥 WINDOWS APPLICATION ROOT (Splash -> PIN -> Workspace) 🔥
 // ========================================================
 class WindowsAppRoot extends StatefulWidget {
   const WindowsAppRoot({super.key});
@@ -229,10 +230,12 @@ class _WindowsAppRootState extends State<WindowsAppRoot> {
   bool _isInitializing = true;
   StartupResult? _startupResult;
   bool _showWelcome = false;
+  bool _isLocked = false;
 
   Future<void> _handleStartupComplete(StartupResult result) async {
     final prefs = await SharedPreferences.getInstance();
     final hasCompletedSetup = prefs.getBool('has_completed_setup') ?? false;
+    final isLockEnabled = await AppLockService.instance.isLockEnabled();
 
     // Restore user window preferences or standard desktop workspace defaults
     final bool isMaximized = prefs.getBool('window_is_maximized') ?? false;
@@ -253,6 +256,7 @@ class _WindowsAppRootState extends State<WindowsAppRoot> {
         _startupResult = result;
         _isInitializing = false;
         _showWelcome = !hasCompletedSetup;
+        _isLocked = isLockEnabled;
       });
     }
   }
@@ -262,6 +266,13 @@ class _WindowsAppRootState extends State<WindowsAppRoot> {
     if (_isInitializing) {
       return WindowsSplashScreen(
         onInitializationComplete: _handleStartupComplete,
+      );
+    }
+
+    // 🔒 6-Digit App Lock Screen (Secure Desktop Protection)
+    if (_isLocked) {
+      return PinLockScreen(
+        onUnlocked: () => setState(() => _isLocked = false),
       );
     }
 
@@ -289,7 +300,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
   bool _isChecking = true;
   bool _isLocked = false;
   bool _showWelcome = false;
-  final LocalAuthentication _auth = LocalAuthentication();
 
   @override
   void initState() {
@@ -299,56 +309,15 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   Future<void> _checkLockStatus() async {
     final prefs = await SharedPreferences.getInstance();
+    final hasCompletedSetup = prefs.getBool('has_completed_setup') ?? false;
+    final isLockEnabled = await AppLockService.instance.isLockEnabled();
 
-    // On desktop: skip biometric, check for first-time setup
-    if (Platform.isWindows || Platform.isLinux) {
-      final hasCompletedSetup =
-          prefs.getBool('has_completed_setup') ?? false;
+    if (mounted) {
       setState(() {
         _isChecking = false;
-        _isLocked = false;
         _showWelcome = !hasCompletedSetup;
+        _isLocked = isLockEnabled;
       });
-      return;
-    }
-
-    // On mobile: original biometric lock logic
-    final isLockEnabled = prefs.getBool('app_lock_enabled') ?? false;
-
-    if (isLockEnabled) {
-      setState(() => _isLocked = true);
-      _authenticate(); // Instantly prompt for fingerprint
-    } else {
-      // Let them right into the app
-      setState(() {
-        _isChecking = false;
-        _isLocked = false;
-      });
-    }
-  }
-
-  Future<void> _authenticate() async {
-    try {
-      final authenticated = await _auth.authenticate(
-        localizedReason: 'Please authenticate to open the app',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly:
-              false, // Allows them to use their PIN if fingerprint fails
-        ),
-      );
-
-      if (authenticated && mounted) {
-        setState(() {
-          _isLocked = false;
-          _isChecking = false;
-        });
-      } else if (mounted) {
-        // They canceled the prompt
-        setState(() => _isChecking = false);
-      }
-    } catch (e) {
-      if (mounted) setState(() => _isChecking = false);
     }
   }
 
@@ -371,63 +340,21 @@ class _AuthWrapperState extends State<AuthWrapper> {
       );
     }
 
-    // 1.5 Desktop first-time: show welcome/restore screen
+    // 2. 6-Digit PIN App Lock Screen
+    if (_isLocked) {
+      return PinLockScreen(
+        onUnlocked: () => setState(() => _isLocked = false),
+      );
+    }
+
+    // 3. First-time setup
     if (_showWelcome) {
       return WelcomeRestoreScreen(
         onComplete: () => setState(() => _showWelcome = false),
       );
     }
 
-    // 2. If locked and they canceled the prompt, show a beautiful lock screen
-    if (_isLocked) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset('assets/app.png', width: 88, height: 88),
-              const SizedBox(height: 20),
-              const Text(
-                "Micro Locked",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A237E),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                "Authenticate to open your workspace",
-                style: TextStyle(color: Colors.grey[600], fontSize: 13),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: _authenticate,
-                icon: const Icon(Icons.fingerprint, color: Colors.white),
-                label: const Text(
-                  "Unlock Workspace",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A237E),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              const SizedBox(height: 40),
-              Text(
-                "Micro Fabrication Suite",
-                style: TextStyle(color: Colors.grey[500], fontSize: 11),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // 3. If everything is good, load the actual app
+    // 4. Load the dashboard
     return const DashboardScreen();
   }
 }

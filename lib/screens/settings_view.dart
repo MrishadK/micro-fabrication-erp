@@ -10,7 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
-import 'package:local_auth/local_auth.dart';
+import '../services/app_lock_service.dart';
+import '../widgets/pin_dialogs.dart';
 
 import '../database_helper.dart';
 import '../services/google_drive_service.dart';
@@ -40,9 +41,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
 
   String _appVersion = "...";
 
-  final LocalAuthentication _auth = LocalAuthentication();
   bool _appLockEnabled = false;
-  bool _isBiometricSupported = false;
 
   final Color _primaryColor = const Color(0xFF1A237E);
 
@@ -55,28 +54,13 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
 
-    bool isSupported = false;
-
-    // Only check biometrics on mobile platforms
-    if (!Platform.isWindows && !Platform.isLinux) {
-      try {
-        final bool canAuthenticateWithBiometrics =
-            await _auth.canCheckBiometrics;
-        isSupported =
-            canAuthenticateWithBiometrics || await _auth.isDeviceSupported();
-      } catch (e) {
-        debugPrint("Biometric hardware check failed: $e");
-        isSupported = false;
-      }
-    }
-
+    final lockEnabled = await AppLockService.instance.isLockEnabled();
     PackageInfo packageInfo = await PackageInfo.fromPlatform();
 
     setState(() {
       _autoBackup = prefs.getBool('auto_backup') ?? false;
       _lastBackupTime = prefs.getString('last_backup_time') ?? "Never";
-      _appLockEnabled = prefs.getBool('app_lock_enabled') ?? false;
-      _isBiometricSupported = isSupported;
+      _appLockEnabled = lockEnabled;
 
       _appVersion = packageInfo.version;
 
@@ -221,130 +205,119 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
     );
   }
 
-  // 🔥 FIX: Cleaned up UI to strictly match your other settings tiles
   Widget _buildSecurityCard() {
-    // On desktop, biometric is not available — show disabled state
-    if (Platform.isWindows || Platform.isLinux) {
-      return _buildCard(
-        child: ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.fingerprint, color: Colors.grey, size: 20),
-          ),
-          title: const Text(
-            "Biometric App Lock",
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-          ),
-          subtitle: const Text(
-            "Not available on desktop",
-            style: TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-        ),
-      );
-    }
-
     return _buildCard(
-      child: SwitchListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        title: const Text(
-          "Biometric App Lock",
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        ),
-        subtitle: const Text(
-          "Require Fingerprint/Face ID",
-          style: TextStyle(fontSize: 12),
-        ),
-        value: _appLockEnabled,
-        onChanged: _isLoading ? null : (v) => _toggleAppLock(v),
-        activeColor: _primaryColor,
-        secondary: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.orange.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
+      child: Column(
+        children: [
+          SwitchListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            title: const Text(
+              "6-Digit App Lock",
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+            subtitle: Text(
+              _appLockEnabled
+                  ? "Workspace is protected with a 6-digit PIN"
+                  : "Require a 6-digit PIN to open workspace",
+              style: TextStyle(
+                fontSize: 12,
+                color: _appLockEnabled ? Colors.green[700] : Colors.grey[600],
+              ),
+            ),
+            value: _appLockEnabled,
+            onChanged: _isLoading ? null : (v) => _toggleAppLock(v),
+            activeColor: _primaryColor,
+            secondary: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: (_appLockEnabled ? Colors.green : Colors.orange)
+                    .withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                _appLockEnabled ? Icons.lock_rounded : Icons.lock_outline_rounded,
+                color: _appLockEnabled ? Colors.green[700] : Colors.orange,
+                size: 20,
+              ),
+            ),
           ),
-          child: const Icon(
-            Icons.fingerprint, // Clean, universally recognized icon
-            color: Colors.orange,
-            size: 20,
-          ),
-        ),
+          if (_appLockEnabled) ...[
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            ListTile(
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _primaryColor.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.password_rounded,
+                    color: _primaryColor, size: 20),
+              ),
+              title: const Text(
+                "Change 6-Digit PIN",
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
+              subtitle: const Text(
+                "Update your current security PIN",
+                style: TextStyle(fontSize: 11, color: Colors.grey),
+              ),
+              trailing:
+                  const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
+              onTap: _handleChangePin,
+            ),
+          ],
+        ],
       ),
     );
   }
 
   Future<void> _toggleAppLock(bool val) async {
-    if (val == true && !_isBiometricSupported) {
-      _msg(
-        "This phone doesn't support or have biometrics set up.",
-        isError: true,
-      );
-      setState(() => _appLockEnabled = false);
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    try {
-      bool authenticated = await _auth.authenticate(
-        localizedReason: val
-            ? 'Scan your fingerprint to enable App Lock'
-            : 'Scan your fingerprint to disable App Lock',
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,
-        ),
-      );
-
-      if (authenticated) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('app_lock_enabled', val);
+    if (val == true) {
+      final hasPin = await AppLockService.instance.hasPinSet();
+      if (hasPin) {
+        await AppLockService.instance.enableLock();
         if (mounted) {
-          setState(() => _appLockEnabled = val);
-          _msg(val ? "App Lock Enabled" : "App Lock Disabled", isError: false);
+          setState(() => _appLockEnabled = true);
+          _msg("6-Digit App Lock Enabled", isError: false);
         }
       } else {
-        if (mounted) setState(() => _appLockEnabled = !val);
-      }
-    } on PlatformException catch (e) {
-      // 🔥 FIX: Actually tell the user what went wrong natively
-      if (mounted) {
-        String errorMessage;
-
-        switch (e.code) {
-          case 'NotEnrolled':
-            errorMessage =
-                "No biometric credentials are enrolled on this device.\n"
-                "Please add a fingerprint or face ID in your device settings.";
-            break;
-
-          case 'LockedOut':
-          case 'PermanentlyLockedOut':
-            errorMessage =
-                "Biometric authentication is temporarily locked due to too many failed attempts.\n"
-                "Please unlock your device and try again.";
-            break;
-
-          default:
-            errorMessage =
-                "Biometric authentication is not supported on this device.";
+        if (!mounted) return;
+        final isSet = await showPinSetupDialog(context);
+        if (isSet == true && mounted) {
+          setState(() => _appLockEnabled = true);
+          _msg("6-Digit PIN Created & App Lock Enabled", isError: false);
+        } else if (mounted) {
+          setState(() => _appLockEnabled = false);
         }
+      }
+    } else {
+      // Must verify existing PIN before turning off lock!
+      final verified = await showPinVerifyDialog(
+        context,
+        title: "Disable 6-Digit Lock",
+        subtitle: "Enter your current 6-digit PIN to turn off lock protection",
+      );
 
-        _msg(errorMessage, isError: true);
-        setState(() => _appLockEnabled = !val);
+      if (verified == true) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('app_lock_enabled', false);
+        if (mounted) {
+          setState(() => _appLockEnabled = false);
+          _msg("6-Digit App Lock Disabled", isError: false);
+        }
+      } else if (mounted) {
+        setState(() => _appLockEnabled = true);
       }
-    } catch (e) {
-      if (mounted) {
-        _msg("An unexpected error occurred.", isError: true);
-        setState(() => _appLockEnabled = !val);
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleChangePin() async {
+    final updated = await showPinChangeDialog(context);
+    if (updated == true && mounted) {
+      _msg("6-Digit PIN successfully updated", isError: false);
     }
   }
 
