@@ -16,7 +16,9 @@ class PdfService {
     return s.isEmpty ? "-" : s;
   }
 
-  double _getPlaceFontSize(String text) {
+  double _getPlaceFontSize(dynamic raw) {
+    if (raw == null) return 11;
+    String text = raw.toString().trim();
     if (text.isEmpty) return 11;
     int len = text.length;
     if (len < 15) return 11;
@@ -43,12 +45,12 @@ class PdfService {
 
     final date = DateFormat(
       'dd/MM/yyyy',
-    ).format(DateTime.parse(job['created_at']));
+    ).format(DateTime.parse(job['created_at'] ?? DateTime.now().toIso8601String()));
 
     String receiptNo =
         (job['bill_no'] != null && job['bill_no'].toString().trim().isNotEmpty)
         ? job['bill_no'].toString()
-        : job['id'].toString();
+        : (job['id']?.toString() ?? '1');
 
     String cleanedPhone = _cleanPhone(job['client_phone']);
 
@@ -255,7 +257,7 @@ class PdfService {
                     _buildField("Name", job['client_name'], font, width: 120),
                     _buildField(
                       "Place",
-                      job['client_place'] ?? "-",
+                      job['client_place'],
                       font,
                       width: 80,
                       fontSize: _getPlaceFontSize(job['client_place']),
@@ -345,7 +347,13 @@ class PdfService {
                                     ),
                                   ),
                                   child: pw.Text(
-                                    job['work_details'] ?? "",
+                                    (job['work_details'] != null &&
+                                            job['work_details']
+                                                .toString()
+                                                .trim()
+                                                .isNotEmpty)
+                                        ? job['work_details'].toString()
+                                        : "-",
                                     style: pw.TextStyle(
                                       font: font,
                                       fontSize: 11,
@@ -722,12 +730,15 @@ class PdfService {
 
   pw.Widget _buildField(
     String label,
-    String value,
+    dynamic rawValue,
     pw.Font font, {
     double width = 100,
     double? fontSize,
   }) {
-    double finalFontSize = fontSize ?? 11;
+    final String value = (rawValue == null || rawValue.toString().trim().isEmpty)
+        ? "-"
+        : rawValue.toString().trim();
+    final double finalFontSize = fontSize ?? 11;
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       mainAxisSize: pw.MainAxisSize.min,
@@ -744,19 +755,28 @@ class PdfService {
               ),
               pw.SizedBox(
                 width: width,
-                child: pw.FittedBox(
-                  fit: pw.BoxFit.scaleDown,
-                  alignment: pw.Alignment.bottomLeft,
-                  child: pw.Text(
-                    value,
-                    maxLines: 1,
-                    style: pw.TextStyle(
-                      font: font,
-                      fontSize: finalFontSize,
-                      fontWeight: pw.FontWeight.bold,
-                    ),
-                  ),
-                ),
+                child: value == "-"
+                    ? pw.Text(
+                        "-",
+                        style: pw.TextStyle(
+                          font: font,
+                          fontSize: finalFontSize,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      )
+                    : pw.FittedBox(
+                        fit: pw.BoxFit.scaleDown,
+                        alignment: pw.Alignment.bottomLeft,
+                        child: pw.Text(
+                          value,
+                          maxLines: 1,
+                          style: pw.TextStyle(
+                            font: font,
+                            fontSize: finalFontSize,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                      ),
               ),
             ],
           ),
