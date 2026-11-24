@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../database_helper.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:printing/printing.dart';
 import '../services/wage_pdf.dart';
 
 // Helper function to safely determine the mode
@@ -976,12 +977,14 @@ class _WagesViewState extends State<WagesView> {
                       maxWidth: 880,
                       maxHeight: MediaQuery.of(context).size.height * 0.92,
                     ),
-                    child: WorkerDetailScreen(
-                      workerData: worker,
-                      isDialog: true,
-                      onSave: handleSave,
-                      onEditProfile: () =>
-                          _showWorkerDialog(context, worker, index: index),
+                    child: ExcludeSemantics(
+                      child: WorkerDetailScreen(
+                        workerData: worker,
+                        isDialog: true,
+                        onSave: handleSave,
+                        onEditProfile: () =>
+                            _showWorkerDialog(context, worker, index: index),
+                      ),
                     ),
                   ),
                 ),
@@ -3409,6 +3412,261 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
     );
   }
 
+  Future<void> _openPayslipPreview() async {
+    final currentEarned = _currentPeriodPay.roundToDouble();
+    final currentPaid = _currentPaymentHistory
+        .fold(0.0, (s, e) => s + (e['amount'] as num).toDouble())
+        .roundToDouble();
+
+    int daysWorked = 0;
+    int absentDays = 0;
+
+    double totalNormalHours = 0;
+    double totalOtHours = 0;
+    double totalPieces = 0;
+    int totalTasks = 0;
+
+    List<Map<String, String>> dailyRecords = [];
+    final defaultWageType = _localWorkerData['wage_type'] ?? 'daily';
+    final baseRate = _localWorkerData['rate'] ?? 0.0;
+
+    DateTime startDay;
+    int loopDays;
+
+    if (_isWeeklyView) {
+      final offset = _currentDate.weekday == DateTime.sunday
+          ? 0
+          : _currentDate.weekday;
+      startDay = _currentDate.subtract(Duration(days: offset));
+      loopDays = 7;
+    } else {
+      startDay = DateTime(_currentDate.year, _currentDate.month, 1);
+      loopDays = DateUtils.getDaysInMonth(
+        _currentDate.year,
+        _currentDate.month,
+      );
+    }
+
+    final todayNormalized = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+    );
+
+    for (int i = 0; i < loopDays; i++) {
+      final currentDay = startDay.add(Duration(days: i));
+      final currentDayNormalized = DateTime(
+        currentDay.year,
+        currentDay.month,
+        currentDay.day,
+      );
+
+      final bool isFuture = currentDayNormalized.isAfter(todayNormalized);
+      final key = DateFormat('yyyy-MM-dd').format(currentDay);
+      final displayDate = DateFormat('dd MMM').format(currentDay);
+
+      if (_attendanceMap.containsKey(key)) {
+        final d = _attendanceMap[key];
+        final mode = _resolveMode(d, defaultWageType);
+        bool isAbsent = false;
+
+        if (mode == 'daily') {
+          final nH = ((d['fraction'] ?? 0) as num).toDouble() * 8.0;
+          final oH = ((d['ot'] ?? 0) as num).toDouble();
+
+          totalNormalHours += nH;
+          totalOtHours += oH;
+
+          if (nH == 0 && oH == 0) {
+            isAbsent = true;
+          } else {
+            daysWorked++;
+            if (nH > 0) {
+              dailyRecords.add({
+                'date': displayDate,
+                'work': 'Regular Shift',
+                'qty_rate': '${nH.toStringAsFixed(1)} Hrs',
+                'earned': (nH * (baseRate / 8.0)).round().toString(),
+              });
+            }
+            if (oH > 0) {
+              dailyRecords.add({
+                'date': displayDate,
+                'work': 'Overtime',
+                'qty_rate': '${oH.toStringAsFixed(1)} Hrs',
+                'earned': (oH * (baseRate / 6.0)).round().toString(),
+              });
+            }
+          }
+        } else {
+          final p = ((d['pieces'] ?? 0) as num).toDouble();
+          final tList = d['tasks'] as List? ?? [];
+
+          totalPieces += p;
+          totalTasks += tList.length;
+
+          if (p == 0 &&
+              tList.isEmpty &&
+              ((d['fraction'] ?? 0) as num).toDouble() == 0) {
+            isAbsent = true;
+          } else {
+            daysWorked++;
+
+            if (p > 0) {
+              dailyRecords.add({
+                'date': displayDate,
+                'work': 'Standard Pieces',
+                'qty_rate':
+                    '${p.toInt()} pcs @ Rs. ${baseRate.round()}',
+                'earned': (p * baseRate).round().toString(),
+              });
+            }
+
+            for (var t in tList) {
+              String tName = t['name']?.toString() ?? 'Specific Task';
+              String pageStr = t['page_no']?.toString() ?? '';
+              if (pageStr.isNotEmpty) {
+                tName += " (Bill: $pageStr)";
+              }
+
+              double tQty = (t['qty'] as num?)?.toDouble() ?? 0.0;
+              double tRate = (t['rate'] as num?)?.toDouble() ?? 0.0;
+              double tTotal = (t['total'] as num?)?.toDouble() ?? 0.0;
+
+              dailyRecords.add({
+                'date': displayDate,
+                'work': tName,
+                'qty_rate':
+                    '${tQty.toInt()} pcs @ Rs. ${tRate.round()}',
+                'earned': tTotal.round().toString(),
+              });
+            }
+          }
+        }
+
+        if (isAbsent && !isFuture) {
+          absentDays++;
+        }
+      } else {
+        if (!isFuture) {
+          absentDays++;
+        }
+      }
+    }
+
+    try {
+      final sanitizedName = (_localWorkerData['name'] ?? 'Worker')
+          .toString()
+          .replaceAll(RegExp(r'[^\w\s]+'), '')
+          .trim();
+      final docName = 'PaySlip_${sanitizedName}_$_periodLabel'
+          .replaceAll(RegExp(r'[^\w\s-]+'), '');
+
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (ctx) {
+          final screenSize = MediaQuery.of(ctx).size;
+          final dialogWidth = (screenSize.width * 0.9).clamp(320.0, 950.0);
+          final dialogHeight = (screenSize.height * 0.9).clamp(400.0, 850.0);
+
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            backgroundColor: Colors.white,
+            clipBehavior: Clip.antiAlias,
+            insetPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 20,
+            ),
+            child: SizedBox(
+              width: dialogWidth,
+              height: dialogHeight,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    color: const Color(0xFF1E293B),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.picture_as_pdf_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'Payslip Preview (${_localWorkerData['name']} - $_periodLabel)',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.close_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: PdfPreview(
+                      build: (format) async => await WagePdfService.generatePayslip(
+                        workerName: _localWorkerData['name'] ?? 'Worker',
+                        periodLabel: _periodLabel,
+                        totalEarned: currentEarned,
+                        totalPaid: currentPaid,
+                        daysWorked: daysWorked,
+                        absentDays: absentDays,
+                        normalHours: totalNormalHours,
+                        otHours: totalOtHours,
+                        pieces: totalPieces,
+                        tasks: totalTasks,
+                        dailyRecords: dailyRecords,
+                      ),
+                      pdfFileName: '$docName.pdf',
+                      allowPrinting: true,
+                      allowSharing: true,
+                      canChangePageFormat: false,
+                      canChangeOrientation: false,
+                      canDebug: false,
+                      loadingWidget: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error generating PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     double overallBalance = _allTimeEarned - _allTimePaid;
@@ -3464,216 +3722,8 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.receipt_long),
-            tooltip: 'Share Payslip',
-            onPressed: () async {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  duration: const Duration(seconds: 2),
-                  content: Row(
-                    children: const [
-                      SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Text('Preparing your payslip PDF...'),
-                    ],
-                  ),
-                ),
-              );
-
-              final currentEarned = _currentPeriodPay.roundToDouble();
-              final currentPaid = _currentPaymentHistory
-                  .fold(0.0, (s, e) => s + (e['amount'] as num).toDouble())
-                  .roundToDouble();
-
-              int daysWorked = 0;
-              int absentDays = 0;
-
-              // 🔥 Variables to pass to the PDF 🔥
-              double totalNormalHours = 0;
-              double totalOtHours = 0;
-              double totalPieces = 0;
-              int totalTasks = 0;
-
-              List<Map<String, String>> dailyRecords = [];
-              final defaultWageType = _localWorkerData['wage_type'] ?? 'daily';
-              final baseRate =
-                  _localWorkerData['rate'] ??
-                  0.0; // Ensures piece rate shows up
-
-              DateTime startDay;
-              int loopDays;
-
-              if (_isWeeklyView) {
-                final offset = _currentDate.weekday == DateTime.sunday
-                    ? 0
-                    : _currentDate.weekday;
-                startDay = _currentDate.subtract(Duration(days: offset));
-                loopDays = 7;
-              } else {
-                startDay = DateTime(_currentDate.year, _currentDate.month, 1);
-                loopDays = DateUtils.getDaysInMonth(
-                  _currentDate.year,
-                  _currentDate.month,
-                );
-              }
-
-              final todayNormalized = DateTime(
-                DateTime.now().year,
-                DateTime.now().month,
-                DateTime.now().day,
-              );
-
-              for (int i = 0; i < loopDays; i++) {
-                final currentDay = startDay.add(Duration(days: i));
-                final currentDayNormalized = DateTime(
-                  currentDay.year,
-                  currentDay.month,
-                  currentDay.day,
-                );
-
-                // 🔥 THE FIX: Check if it's a future day, but DO NOT skip the loop! 🔥
-                final bool isFuture = currentDayNormalized.isAfter(
-                  todayNormalized,
-                );
-
-                final key = DateFormat('yyyy-MM-dd').format(currentDay);
-                final displayDate = DateFormat('dd MMM').format(currentDay);
-
-                if (_attendanceMap.containsKey(key)) {
-                  final d = _attendanceMap[key];
-                  final mode = _resolveMode(d, defaultWageType);
-                  bool isAbsent = false;
-
-                  if (mode == 'daily') {
-                    final nH = ((d['fraction'] ?? 0) as num).toDouble() * 8.0;
-                    final oH = ((d['ot'] ?? 0) as num).toDouble();
-
-                    totalNormalHours += nH;
-                    totalOtHours += oH;
-
-                    if (nH == 0 && oH == 0) {
-                      isAbsent = true;
-                    } else {
-                      daysWorked++;
-                      if (nH > 0) {
-                        dailyRecords.add({
-                          'date': displayDate,
-                          'work': 'Regular Shift',
-                          'qty_rate': '${nH.toStringAsFixed(1)} Hrs',
-                          'earned': (nH * (baseRate / 8.0)).round().toString(),
-                        });
-                      }
-                      if (oH > 0) {
-                        dailyRecords.add({
-                          'date': displayDate,
-                          'work': 'Overtime',
-                          'qty_rate': '${oH.toStringAsFixed(1)} Hrs',
-                          'earned': (oH * (baseRate / 6.0)).round().toString(),
-                        });
-                      }
-                    }
-                  } else {
-                    final p = ((d['pieces'] ?? 0) as num).toDouble();
-                    final tList = d['tasks'] as List? ?? [];
-
-                    totalPieces += p;
-                    totalTasks += tList.length;
-
-                    if (p == 0 &&
-                        tList.isEmpty &&
-                        ((d['fraction'] ?? 0) as num).toDouble() == 0) {
-                      isAbsent = true;
-                    } else {
-                      daysWorked++;
-
-                      // 1. Log the standard pieces
-                      // 1. Log the standard pieces
-                      if (p > 0) {
-                        dailyRecords.add({
-                          'date': displayDate,
-                          'work': 'Standard Pieces',
-                          'qty_rate':
-                              '${p.toInt()} pcs @ Rs. ${baseRate.round()}', // 🔥 Fixed
-                          'earned': (p * baseRate).round().toString(),
-                        });
-                      }
-
-                      // 2. Log every individual task they did
-                      for (var t in tList) {
-                        String tName = t['name']?.toString() ?? 'Specific Task';
-                        String pageStr = t['page_no']?.toString() ?? '';
-                        if (pageStr.isNotEmpty) {
-                          tName += " (Bill: $pageStr)";
-                        }
-
-                        double tQty = (t['qty'] as num?)?.toDouble() ?? 0.0;
-                        double tRate = (t['rate'] as num?)?.toDouble() ?? 0.0;
-                        double tTotal = (t['total'] as num?)?.toDouble() ?? 0.0;
-
-                        dailyRecords.add({
-                          'date': displayDate,
-                          'work': tName,
-                          'qty_rate':
-                              '${tQty.toInt()} pcs @ Rs. ${tRate.round()}', // 🔥 Fixed
-                          'earned': tTotal.round().toString(),
-                        });
-                      }
-                    }
-                  }
-
-                  // Only mark as absent if they missed a past/current day
-                  if (isAbsent && !isFuture) {
-                    absentDays++;
-                  }
-                } else {
-                  // Only mark as absent if they missed a past/current day
-                  if (!isFuture) {
-                    absentDays++;
-                  }
-                }
-              }
-
-              try {
-                final pdfBytes = await WagePdfService.generatePayslip(
-                  workerName: _localWorkerData['name'] ?? 'Worker',
-                  periodLabel: _periodLabel,
-                  totalEarned: currentEarned,
-                  totalPaid: currentPaid,
-                  daysWorked: daysWorked,
-                  absentDays: absentDays,
-                  normalHours: totalNormalHours,
-                  otHours: totalOtHours,
-                  pieces: totalPieces,
-                  tasks: totalTasks,
-                  dailyRecords: dailyRecords,
-                );
-
-                final dir = await getTemporaryDirectory();
-                final sanitizedName = (_localWorkerData['name'] ?? 'Worker')
-                    .replaceAll(RegExp(r'[^\w\s]+'), '');
-                final file = File('${dir.path}/PaySlip_$sanitizedName.pdf');
-                await file.writeAsBytes(pdfBytes);
-
-                await Share.shareXFiles(
-                  [XFile(file.path)],
-                  text:
-                      'Salary Slip for ${_localWorkerData['name']} ($_periodLabel)',
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error generating PDF: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
+            tooltip: 'Preview / Share Payslip',
+            onPressed: _openPayslipPreview,
           ),
           PopupMenuButton<bool>(
             icon: const Icon(Icons.more_vert),
@@ -3697,14 +3747,14 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
         ],
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(20, 15, 20, 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
+              blurRadius: 8,
+              offset: const Offset(0, -3),
             ),
           ],
         ),
@@ -3717,11 +3767,11 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
-                      vertical: 16,
+                      vertical: 14,
                     ),
                     side: BorderSide(color: Colors.grey[300]!),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   child: const Text(
@@ -3736,22 +3786,22 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
               ],
               Expanded(
                 child: SizedBox(
-                  height: 55,
+                  height: 48,
                   child: ElevatedButton(
                     onPressed: _saveAndPop,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _primaryColor,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                     child: const Text(
                       'SAVE CHANGES',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
+                        letterSpacing: 0.8,
                       ),
                     ),
                   ),
@@ -3765,304 +3815,470 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 880),
           child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            // ---- Worker Identity Card ----
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _primaryColor,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      // Avatar circle with initials
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.18),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            (_localWorkerData['name'] as String? ?? 'W')
-                                .trim()
-                                .split(' ')
-                                .map((p) => p.isNotEmpty ? p[0] : '')
-                                .take(2)
-                                .join()
-                                .toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _localWorkerData['name'] ?? '',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            // Status badge
-                            Builder(
-                              builder: (_) {
-                                final st =
-                                    (_localWorkerData['status'] ?? 'Active')
-                                        as String;
-                                final Color badgeBg = st == 'Active'
-                                    ? Colors.green[400]!
-                                    : st == 'Vacation'
-                                    ? Colors.blue[300]!
-                                    : Colors.grey[500]!;
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: badgeBg,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    st.toUpperCase(),
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  const Divider(color: Colors.white24, height: 1),
-                  const SizedBox(height: 12),
-                  // Rate + Phone row
-                  Row(
-                    children: [
-                      // Rate chip
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Rate: \u20b9${(_localWorkerData['rate'] ?? 0).toStringAsFixed(0)} / ${_localWorkerData['wage_type'] == 'piece' ? 'pc' : 'day'}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      // Phone button (tappable → dialer)
-                      if ((_localWorkerData['employee_phone'] ?? '').isNotEmpty)
-                        GestureDetector(
-                          onTap: () => _launchPhone(
-                            _localWorkerData['employee_phone'] as String,
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.green[400],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text(
-                                  'CALL  ',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                Text(
-                                  _localWorkerData['employee_phone'],
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      else
-                        GestureDetector(
-                          onTap: _showEditProfileSheet,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              'Add Phone',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            // ---- Overall Balance card ----
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: overBg,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: overColor.withValues(alpha: 0.3)),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    "OVERALL ACCOUNT BALANCE",
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[600],
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    overStatus,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: overColor,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Earned: \u20b9${_allTimeEarned.round()}  |  Paid: \u20b9${_allTimePaid.round()}",
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[700],
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () => _changePeriod(-1),
+                _buildWorkerIdentityBar(),
+                const SizedBox(height: 10),
+                _buildStatsRow(
+                  overBg,
+                  overColor,
+                  overStatus,
                 ),
-                Text(
-                  _periodLabel,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                const SizedBox(height: 10),
+                _buildPeriodNavRow(),
+                const SizedBox(height: 8),
+                _buildCalendar(),
+                const SizedBox(height: 8),
+                _buildPaymentSummary(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWorkerIdentityBar() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: _primaryColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                (_localWorkerData['name'] as String? ?? 'W')
+                    .trim()
+                    .split(' ')
+                    .map((p) => p.isNotEmpty ? p[0] : '')
+                    .take(2)
+                    .join()
+                    .toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    _localWorkerData['name'] ?? '',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: () => _changePeriod(1),
+                const SizedBox(width: 8),
+                Builder(
+                  builder: (_) {
+                    final st =
+                        (_localWorkerData['status'] ?? 'Active') as String;
+                    final Color badgeBg = st == 'Active'
+                        ? Colors.green[400]!
+                        : st == 'Vacation'
+                            ? Colors.blue[300]!
+                            : Colors.grey[500]!;
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: badgeBg,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        st.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: _primaryColor,
-                borderRadius: BorderRadius.circular(20),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'Rate: \u20b9${(_localWorkerData['rate'] ?? 0).toStringAsFixed(0)} / ${_localWorkerData['wage_type'] == 'piece' ? 'pc' : 'day'}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _isWeeklyView
-                            ? 'Earned This Week'
-                            : 'Earned This Month',
-                        style: const TextStyle(color: Colors.white70),
+            ),
+          ),
+          const SizedBox(width: 10),
+          if ((_localWorkerData['employee_phone'] ?? '').isNotEmpty)
+            GestureDetector(
+              onTap: () =>
+                  _launchPhone(_localWorkerData['employee_phone'] as String),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.green[500],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.phone_rounded,
+                      color: Colors.white,
+                      size: 13,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      _localWorkerData['employee_phone'],
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
                       ),
-                      Text(
-                        '₹${_currentPeriodPay.round()}', // 🔥 Use .round()
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            GestureDetector(
+              onTap: _showEditProfileSheet,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Add Phone',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsRow(
+    Color overBg,
+    Color overColor,
+    String overStatus,
+  ) {
+    final paidAmt = _currentPaymentHistory.fold(
+      0.0,
+      (s, e) => s + (e['amount'] as num).toDouble(),
+    );
+    final diff = paidAmt - _currentPeriodPay;
+    String periodPayStatus = "No Dues";
+    Color periodPayColor = Colors.white70;
+    if (diff > 0) {
+      periodPayStatus = "+ \u20b9${diff.round()} Advance";
+      periodPayColor = Colors.orange[300]!;
+    } else if (diff < 0) {
+      periodPayStatus = "- \u20b9${diff.abs().round()} Due";
+      periodPayColor = Colors.amber[300]!;
+    } else if (_currentPeriodPay > 0 && diff == 0) {
+      periodPayStatus = "Fully Paid";
+      periodPayColor = Colors.green[300]!;
+    }
+
+    return Row(
+      children: [
+        // Overall Balance
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: overBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: overColor.withValues(alpha: 0.25),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "OVERALL ACCOUNT BALANCE",
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[700],
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  overStatus,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                    color: overColor,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "Earned: \u20b9${_allTimeEarned.round()}  \u2022  Paid: \u20b9${_allTimePaid.round()}",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[700],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Current Period Earnings
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E293B),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _isWeeklyView ? 'Earned This Week' : 'Earned This Month',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '\u20b9${_currentPeriodPay.round()}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      periodPayStatus,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: periodPayColor,
+                      ),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.account_balance_wallet_rounded,
+                    color: Colors.white70,
+                    size: 24,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPeriodNavRow() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left_rounded, size: 22),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              onPressed: () => _changePeriod(-1),
+            ),
+            Text(
+              _periodLabel,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.chevron_right_rounded, size: 22),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              onPressed: () => _changePeriod(1),
+            ),
+          ],
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.all(2),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      if (!_isWeeklyView) {
+                        setState(() => _isWeeklyView = true);
+                        _loadPayment();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            _isWeeklyView ? Colors.white : Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: _isWeeklyView
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.06),
+                                  blurRadius: 4,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Text(
+                        'Week',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: _isWeeklyView
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color:
+                              _isWeeklyView ? _primaryColor : Colors.grey[700],
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                  const Icon(
-                    Icons.account_balance_wallet,
-                    color: Colors.white24,
-                    size: 40,
+                  GestureDetector(
+                    onTap: () {
+                      if (_isWeeklyView) {
+                        setState(() => _isWeeklyView = false);
+                        _loadPayment();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            !_isWeeklyView ? Colors.white : Colors.transparent,
+                        borderRadius: BorderRadius.circular(6),
+                        boxShadow: !_isWeeklyView
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.06),
+                                  blurRadius: 4,
+                                ),
+                              ]
+                            : null,
+                      ),
+                      child: Text(
+                        'Month',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: !_isWeeklyView
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                          color:
+                              !_isWeeklyView ? _primaryColor : Colors.grey[700],
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            _buildCalendar(),
-            _buildPaymentSummary(),
+            const SizedBox(width: 8),
+            OutlinedButton.icon(
+              onPressed: _openPayslipPreview,
+              icon: const Icon(Icons.receipt_long_rounded, size: 15),
+              label: const Text(
+                'Payslip',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                side: BorderSide(color: _primaryColor.withOpacity(0.3)),
+                foregroundColor: _primaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
           ],
         ),
-      ),
-    ),
-  ),
-);
+      ],
+    );
   }
 
   Widget _buildDayHeaders() {
     const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+      padding: const EdgeInsets.only(bottom: 6.0),
       child: Row(
         children: List.generate(
           7,
@@ -4072,7 +4288,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                 days[index],
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  fontSize: 13,
+                  fontSize: 12,
                   color: index == 0 ? Colors.red[400] : Colors.grey[600],
                 ),
               ),
@@ -4098,6 +4314,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
           crossAxisCount: 7,
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
+          childAspectRatio: 1.85,
         ),
         itemCount: 7,
         itemBuilder: (context, index) =>
@@ -4121,8 +4338,9 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 7,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
+          mainAxisSpacing: 6,
+          crossAxisSpacing: 6,
+          childAspectRatio: 1.45,
         ),
         itemCount: daysInMonth + firstDayOffset,
         itemBuilder: (context, index) {
@@ -4158,9 +4376,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
         normalHours = ((data['fraction'] ?? 0) as num).toDouble() * 8.0;
         otHours = ((data['ot'] ?? 0) as num).toDouble();
         hours = normalHours + otHours;
-        isExplicitlyAbsent =
-            hours ==
-            0.0; // Correctly detects Absent even if there's only OT logic
+        isExplicitlyAbsent = hours == 0.0;
       } else if (mode == 'piece') {
         pieces = (((data['pieces'] ?? 0) as num).toDouble());
         tasks = data['tasks'] as List? ?? [];
@@ -4191,7 +4407,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
         bg = Colors.green[100]!;
         text = Colors.green[900]!;
       } else {
-        bg = const Color(0xFFD1C4E9); // Deep purple for OT
+        bg = const Color(0xFFD1C4E9);
         text = Colors.deepPurple;
         border = Border.all(color: Colors.deepPurple, width: 2);
       }
@@ -4210,13 +4426,17 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
             Center(
               child: Text(
                 '${date.day}',
-                style: TextStyle(fontWeight: FontWeight.bold, color: text),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: text,
+                  fontSize: 14,
+                ),
               ),
             ),
             if (isExplicitlyAbsent && data != null)
               Positioned(
-                bottom: 2,
-                right: 4,
+                bottom: 3,
+                right: 5,
                 child: Text(
                   'Absent',
                   style: TextStyle(
@@ -4228,8 +4448,8 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
               )
             else if (mode == 'piece' && (pieces > 0 || tasks.isNotEmpty))
               Positioned(
-                bottom: 2,
-                right: 4,
+                bottom: 3,
+                right: 5,
                 child: Text(
                   '${pieces > 0 ? '${pieces.toInt()}p ' : ''}${tasks.isNotEmpty ? '+${tasks.length}T' : ''}'
                       .trim(),
@@ -4241,15 +4461,14 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                 ),
               )
             else if (mode == 'daily' && hours > 0)
-              // Only draw custom label if it's NOT a standard perfectly 8hr day without OT
               if (!(normalHours == 8 && otHours == 0))
                 Positioned(
-                  bottom: 2,
-                  right: 4,
+                  bottom: 3,
+                  right: 5,
                   child: Text(
                     otHours > 0
-                        ? '${normalHours}h +${otHours}ot'
-                        : '${normalHours}h',
+                        ? '${normalHours.toStringAsFixed(normalHours.truncateToDouble() == normalHours ? 0 : 1)}h+${otHours.toStringAsFixed(otHours.truncateToDouble() == otHours ? 0 : 1)}ot'
+                        : '${normalHours.toStringAsFixed(normalHours.truncateToDouble() == normalHours ? 0 : 1)}h',
                     style: TextStyle(
                       fontSize: 8,
                       color: text,
@@ -4275,33 +4494,26 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
     Color statusColor;
 
     if (diff > 0) {
-      statusText = "+ ₹${diff.round()} (Advance)"; // 🔥 Use .round()
+      statusText = "+ \u20b9${diff.round()} (Advance)";
       statusColor = Colors.orange[800]!;
     } else if (diff < 0) {
-      statusText =
-          "- ₹${diff.abs().round()} (Pending Balance)"; // 🔥 Use .round()
+      statusText = "- \u20b9${diff.abs().round()} (Pending)";
       statusColor = Colors.red[700]!;
     } else if (earned > 0 && diff == 0) {
       statusText = "Fully Paid";
       statusColor = Colors.green[700]!;
     } else {
       statusText = "No Dues";
-      statusColor = Colors.grey;
+      statusColor = Colors.grey[700]!;
     }
 
     return Container(
-      margin: const EdgeInsets.only(top: 20),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -4309,37 +4521,62 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                _isWeeklyView
-                    ? "WEEKLY PAYMENT LEDGER"
-                    : "MONTHLY PAYMENT LEDGER",
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                  letterSpacing: 1,
-                ),
+              Row(
+                children: [
+                  Text(
+                    _isWeeklyView ? "WEEKLY LEDGER" : "MONTHLY LEDGER",
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[700],
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      statusText,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               InkWell(
                 onTap: _showAddPaymentDialog,
+                borderRadius: BorderRadius.circular(6),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: _primaryColor.withOpacity(0.1),
+                    color: _primaryColor,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
-                    children: [
-                      Icon(Icons.add, size: 14, color: _primaryColor),
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.add, size: 13, color: Colors.white),
+                      SizedBox(width: 3),
                       Text(
-                        " ADD",
+                        "RECORD PAYMENT",
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: _primaryColor,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ],
@@ -4348,92 +4585,62 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 15),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Earned this period:",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-              ),
-              Text(
-                "₹${earned.round()}", // 🔥 Use .round()
-                style: const TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 20),
-
           if (_currentPaymentHistory.isNotEmpty) ...[
-            ..._currentPaymentHistory.map((p) {
-              DateTime pDate =
-                  DateTime.tryParse(p['paid_date'] ?? '') ?? DateTime.now();
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "• Paid on ${DateFormat('dd MMM yyyy').format(pDate)}",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[700],
-                        fontWeight: FontWeight.w600,
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: _currentPaymentHistory.map((p) {
+                DateTime pDate =
+                    DateTime.tryParse(p['paid_date'] ?? '') ?? DateTime.now();
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.green[200]!),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "${DateFormat('dd MMM').format(pDate)}: ",
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[700],
+                        ),
                       ),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          "₹${p['amount']}",
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green[700],
-                            fontSize: 14,
-                          ),
+                      Text(
+                        "\u20b9${p['amount']}",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green[800],
+                          fontSize: 11,
                         ),
-                        const SizedBox(width: 8),
-                        InkWell(
-                          onTap: () async {
-                            await DatabaseHelper.instance.deleteSinglePayment(
-                              p['id'],
-                            );
-                            _loadPayment(); // Refresh the view instantly
-                          },
-                          child: const Icon(
-                            Icons.delete,
-                            size: 16,
-                            color: Colors.red,
-                          ),
+                      ),
+                      const SizedBox(width: 4),
+                      InkWell(
+                        onTap: () async {
+                          await DatabaseHelper.instance.deleteSinglePayment(
+                            p['id'],
+                          );
+                          _loadPayment();
+                        },
+                        child: const Icon(
+                          Icons.close_rounded,
+                          size: 13,
+                          color: Colors.red,
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-            const Divider(height: 20),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
           ],
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Period Status:",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-              ),
-              Text(
-                statusText,
-                style: TextStyle(
-                  fontWeight: FontWeight.w900,
-                  color: statusColor,
-                  fontSize: 15,
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );

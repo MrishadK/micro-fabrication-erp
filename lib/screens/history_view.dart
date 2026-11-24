@@ -501,7 +501,13 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
                       maxWidth: 900,
                       maxHeight: MediaQuery.of(context).size.height * 0.92,
                     ),
-                    child: JobDetailScreen(job: job, ref: ref, isDialog: true),
+                    child: ExcludeSemantics(
+                      child: JobDetailScreen(
+                        job: job,
+                        ref: ref,
+                        isDialog: true,
+                      ),
+                    ),
                   ),
                 ),
               );
