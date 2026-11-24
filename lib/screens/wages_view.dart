@@ -1,12 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../database_helper.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:printing/printing.dart';
 import '../services/wage_pdf.dart';
 
@@ -174,233 +170,543 @@ class _WagesViewState extends State<WagesView> {
             double newTotal = totalPaidSoFar + entered;
             double diff = newTotal - earned;
 
-            String statusText = "";
-            Color statusColor = Colors.grey;
+            String statusText;
+            Color statusBg;
+            Color statusBorder;
+            Color statusColor;
+            IconData statusIcon;
 
             if (diff > 0) {
-              statusText =
-                  "Advance / Overpay: +₹${diff.round()}"; // 🔥 Use .round()
-              statusColor = Colors.orange[800]!;
+              statusText = "Advance / Overpay: +₹${diff.round()}";
+              statusBg = const Color(0xFFFFFBEB);
+              statusBorder = const Color(0xFFFDE68A);
+              statusColor = const Color(0xFFB45309);
+              statusIcon = Icons.trending_up_rounded;
             } else if (diff < 0) {
-              statusText =
-                  "Still Pending: ₹${diff.abs().round()}"; // 🔥 Use .round()
-              statusColor = Colors.red[700]!;
+              statusText = "Still Pending: ₹${diff.abs().round()}";
+              statusBg = const Color(0xFFFEF2F2);
+              statusBorder = const Color(0xFFFECACA);
+              statusColor = const Color(0xFFB91C1C);
+              statusIcon = Icons.pending_actions_rounded;
             } else {
               statusText = "Will be Fully Paid";
-              statusColor = Colors.green[700]!;
+              statusBg = const Color(0xFFECFDF5);
+              statusBorder = const Color(0xFFA7F3D0);
+              statusColor = const Color(0xFF047857);
+              statusIcon = Icons.check_circle_rounded;
             }
 
-            return AlertDialog(
-              title: const Text(
-                'Add Payment',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[50],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Earned this week:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
-                            ),
-                          ),
-                          Text(
-                            '₹${earned.round()}', // 🔥 Use .round()
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              color: Colors.blue,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-
-                    if (history.isNotEmpty) ...[
-                      const Text(
-                        "Payment History:",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 5),
-                      ...history.map((p) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              insetPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 1. Blue/Navy header directly touches top clip (No white outline)
+                        Container(
+                          width: double.infinity,
+                          color: _primaryColor,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 14),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                "• ${DateFormat('dd MMM').format(DateTime.parse(p['paid_date']))}",
-                                style: TextStyle(
-                                  color: Colors.grey[800],
-                                  fontWeight: FontWeight.w600,
+                              Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.payments_rounded,
+                                  color: Colors.white,
+                                  size: 19,
                                 ),
                               ),
-                              Row(
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Text(
+                                  'Add Payment',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close_rounded,
+                                    color: Colors.white70, size: 20),
+                                onPressed: () => Navigator.pop(ctx),
+                                tooltip: "Close",
+                                splashRadius: 18,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // 2. White body with modern summary card and clean inputs
+                        Flexible(
+                          child: Container(
+                            color: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 22, vertical: 20),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    "₹${p['amount']}",
-                                    style: TextStyle(
-                                      color: Colors.green[700],
-                                      fontWeight: FontWeight.bold,
+                                  // Earned wage summary card
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 14),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFFEFF6FF),
+                                          Color(0xFFF8FAFC)
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: const Color(0xFFBFDBFE)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF3B82F6)
+                                                .withOpacity(0.12),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.account_balance_wallet_rounded,
+                                            color: Color(0xFF2563EB),
+                                            size: 20,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                'EARNED THIS WEEK',
+                                                style: TextStyle(
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.blueGrey[600],
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 2),
+                                              const Text(
+                                                'Total Wage for Period',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Color(0xFF1E293B),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Text(
+                                          '₹${earned.round()}',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 22,
+                                            color: Color(0xFF1D4ED8),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(width: 5),
+                                  const SizedBox(height: 18),
+
+                                  // Payment history list if available
+                                  if (history.isNotEmpty) ...[
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          "PREVIOUS PAYMENTS (${history.length})",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 11,
+                                            color: Colors.blueGrey[600],
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        Text(
+                                          "Paid: ₹${totalPaidSoFar.round()}",
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.green[700],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF8FAFC),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                            color: Colors.blueGrey.shade100),
+                                      ),
+                                      child: ListView.separated(
+                                        shrinkWrap: true,
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        itemCount: history.length,
+                                        separatorBuilder: (_, __) => Divider(
+                                            height: 1,
+                                            color: Colors.blueGrey.shade100),
+                                        itemBuilder: (context, index) {
+                                          final p = history[index];
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 12, vertical: 8),
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.event_available_rounded,
+                                                      size: 16,
+                                                      color:
+                                                          Colors.blueGrey[500],
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      DateFormat('dd MMM yyyy')
+                                                          .format(DateTime.parse(
+                                                              p['paid_date'])),
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize: 12,
+                                                        color:
+                                                            Color(0xFF334155),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    Text(
+                                                      "₹${p['amount']}",
+                                                      style: TextStyle(
+                                                        color:
+                                                            Colors.green[700],
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    InkWell(
+                                                      onTap: () async {
+                                                        await DatabaseHelper
+                                                            .instance
+                                                            .deleteSinglePayment(
+                                                                p['id']);
+                                                        history.remove(p);
+                                                        totalPaidSoFar -=
+                                                            p['amount'];
+                                                        setDialogState(() {});
+                                                      },
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              14),
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets.all(
+                                                                4.0),
+                                                        child: Icon(
+                                                          Icons
+                                                              .delete_outline_rounded,
+                                                          color:
+                                                              Colors.red[400],
+                                                          size: 16,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: 18),
+                                  ],
+
+                                  Text(
+                                    "ADD NEW PAYMENT",
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blueGrey[600],
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  // Date Picker button
                                   InkWell(
                                     onTap: () async {
-                                      await DatabaseHelper.instance
-                                          .deleteSinglePayment(p['id']);
-                                      history.remove(p);
-                                      totalPaidSoFar -= p['amount'];
-                                      setDialogState(() {});
+                                      final picked = await showDatePicker(
+                                        context: context,
+                                        initialDate: selectedDate,
+                                        firstDate: DateTime(2020),
+                                        lastDate: DateTime(2101),
+                                      );
+                                      if (picked != null) {
+                                        setDialogState(
+                                            () => selectedDate = picked);
+                                      }
                                     },
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: const Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
-                                      size: 16,
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF8FAFC),
+                                        border: Border.all(
+                                            color: Colors.blueGrey.shade200),
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.calendar_today_rounded,
+                                                color: _primaryColor,
+                                                size: 18,
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Text(
+                                                DateFormat('dd MMM yyyy')
+                                                    .format(selectedDate),
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                  color: Color(0xFF1E293B),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blueGrey
+                                                  .withOpacity(0.08),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              "Change",
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.blueGrey[700],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+
+                                  // Amount TextField
+                                  TextField(
+                                    controller: amtCtrl,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                    decoration: InputDecoration(
+                                      labelText: 'Amount Paying Now',
+                                      labelStyle: TextStyle(
+                                        color: Colors.blueGrey[600],
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      prefixIcon: Container(
+                                        width: 44,
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          '₹',
+                                          style: TextStyle(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.bold,
+                                            color: _primaryColor,
+                                          ),
+                                        ),
+                                      ),
+                                      filled: true,
+                                      fillColor: const Color(0xFFF8FAFC),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 14),
+                                      border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                        borderSide: BorderSide(
+                                            color: Colors.blueGrey.shade200),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                        borderSide: BorderSide(
+                                            color: Colors.blueGrey.shade200),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                        borderSide: BorderSide(
+                                            color: _primaryColor, width: 2),
+                                      ),
+                                    ),
+                                    onChanged: (v) => setDialogState(() {}),
+                                  ),
+                                  const SizedBox(height: 12),
+
+                                  // Status Badge Container
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 9),
+                                    decoration: BoxDecoration(
+                                      color: statusBg,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: statusBorder),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(statusIcon,
+                                            color: statusColor, size: 16),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            statusText,
+                                            style: TextStyle(
+                                              color: statusColor,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
+                            ),
+                          ),
+                        ),
+
+                        // 3. Footer actions
+                        Container(
+                          width: double.infinity,
+                          color: const Color(0xFFF8FAFC),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              OutlinedButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.blueGrey[700],
+                                  side: BorderSide(
+                                      color: Colors.blueGrey.shade300),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 11),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
+                                ),
+                                child: const Text("Close",
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w600)),
+                              ),
+                              const SizedBox(width: 10),
+                              ElevatedButton.icon(
+                                onPressed: () async {
+                                  double amount =
+                                      double.tryParse(amtCtrl.text) ?? 0.0;
+                                  if (amount > 0) {
+                                    int offset =
+                                        selectedDate.weekday == DateTime.sunday
+                                            ? 0
+                                            : selectedDate.weekday;
+                                    DateTime correctWeekStart =
+                                        selectedDate.subtract(
+                                      Duration(days: offset),
+                                    );
+                                    String weekKey = DateFormat('yyyy-MM-dd')
+                                        .format(correctWeekStart);
+
+                                    await DatabaseHelper.instance
+                                        .markWeeklyPayment(
+                                      workerId,
+                                      weekKey,
+                                      amount,
+                                      paidDate: selectedDate.toIso8601String(),
+                                    );
+                                  }
+                                  if (context.mounted) Navigator.pop(ctx);
+                                  _loadData();
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _primaryColor,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 11),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
+                                  elevation: 1,
+                                ),
+                                icon: const Icon(Icons.check_rounded, size: 18),
+                                label: const Text("Add Payment",
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                              ),
                             ],
                           ),
-                        );
-                      }),
-                      const Divider(),
-                    ],
-
-                    const SizedBox(height: 10),
-                    const Text(
-                      "Add New Payment",
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-
-                    InkWell(
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: selectedDate,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2101),
-                        );
-                        if (picked != null) {
-                          setDialogState(() => selectedDate = picked);
-                        }
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
                         ),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey[300]!),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              DateFormat('dd MMM yyyy').format(selectedDate),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Icon(
-                              Icons.calendar_month_rounded,
-                              color: _primaryColor,
-                              size: 20,
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(height: 15),
-
-                    TextField(
-                      controller: amtCtrl,
-                      keyboardType: TextInputType.number,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      decoration: const InputDecoration(
-                        labelText: 'Amount Paying Now',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.currency_rupee),
-                      ),
-                      onChanged: (v) => setDialogState(() {}),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      statusText,
-                      style: TextStyle(
-                        color: statusColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Close'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    double amount = double.tryParse(amtCtrl.text) ?? 0.0;
-                    if (amount > 0) {
-                      int offset = selectedDate.weekday == DateTime.sunday
-                          ? 0
-                          : selectedDate.weekday;
-                      DateTime correctWeekStart = selectedDate.subtract(
-                        Duration(days: offset),
-                      );
-                      String weekKey = DateFormat(
-                        'yyyy-MM-dd',
-                      ).format(correctWeekStart);
-
-                      await DatabaseHelper.instance.markWeeklyPayment(
-                        workerId,
-                        weekKey,
-                        amount,
-                        paidDate: selectedDate.toIso8601String(),
-                      );
-                    }
-                    if (context.mounted) Navigator.pop(ctx);
-                    _loadData();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryColor,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Add Payment'),
-                ),
-              ],
             );
           },
         );
@@ -3336,113 +3642,290 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text(
-                'Add Payment',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Payment Date",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  InkWell(
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: selectedDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2101),
-                      );
-                      if (picked != null)
-                        setDialogState(() => selectedDate = picked);
-                    },
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            DateFormat('dd MMM yyyy').format(selectedDate),
-                            style: const TextStyle(fontWeight: FontWeight.w600),
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              insetPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Header
+                        Container(
+                          width: double.infinity,
+                          color: _primaryColor,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 14),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.payments_rounded,
+                                  color: Colors.white,
+                                  size: 19,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Text(
+                                  'Add Payment',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close_rounded,
+                                    color: Colors.white70, size: 20),
+                                onPressed: () => Navigator.pop(ctx),
+                                tooltip: "Close",
+                                splashRadius: 18,
+                              ),
+                            ],
                           ),
-                          Icon(
-                            Icons.calendar_month_rounded,
-                            color: _primaryColor,
-                            size: 20,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  TextField(
-                    controller: amtCtrl,
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: 'Amount Paid',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.currency_rupee),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    double amount = double.tryParse(amtCtrl.text) ?? 0.0;
-                    if (amount > 0) {
-                      int offset = selectedDate.weekday == DateTime.sunday
-                          ? 0
-                          : selectedDate.weekday;
-                      DateTime correctWeekStart = selectedDate.subtract(
-                        Duration(days: offset),
-                      );
-                      String weekKey = DateFormat(
-                        'yyyy-MM-dd',
-                      ).format(correctWeekStart);
+                        ),
 
-                      await DatabaseHelper.instance.markWeeklyPayment(
-                        workerId,
-                        weekKey,
-                        amount,
-                        paidDate: selectedDate.toIso8601String(),
-                      );
-                    }
-                    if (context.mounted) Navigator.pop(ctx);
-                    _loadPayment(); // Refresh the ledger immediately
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryColor,
-                    foregroundColor: Colors.white,
+                        // Body
+                        Flexible(
+                          child: Container(
+                            color: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 22, vertical: 20),
+                            child: SingleChildScrollView(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "PAYMENT DETAILS",
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.blueGrey[600],
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+
+                                  // Date selector
+                                  InkWell(
+                                    onTap: () async {
+                                      final picked = await showDatePicker(
+                                        context: context,
+                                        initialDate: selectedDate,
+                                        firstDate: DateTime(2020),
+                                        lastDate: DateTime(2101),
+                                      );
+                                      if (picked != null) {
+                                        setDialogState(
+                                            () => selectedDate = picked);
+                                      }
+                                    },
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 12),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF8FAFC),
+                                        border: Border.all(
+                                            color: Colors.blueGrey.shade200),
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.calendar_today_rounded,
+                                                color: _primaryColor,
+                                                size: 18,
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Text(
+                                                DateFormat('dd MMM yyyy')
+                                                    .format(selectedDate),
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                  color: Color(0xFF1E293B),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blueGrey
+                                                  .withOpacity(0.08),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Text(
+                                              "Change",
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.blueGrey[700],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+
+                                  // Amount Paid field
+                                  TextField(
+                                    controller: amtCtrl,
+                                    keyboardType:
+                                        const TextInputType.numberWithOptions(
+                                            decimal: true),
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                    decoration: InputDecoration(
+                                      labelText: 'Amount Paid',
+                                      labelStyle: TextStyle(
+                                        color: Colors.blueGrey[600],
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      prefixIcon: Container(
+                                        width: 44,
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          '₹',
+                                          style: TextStyle(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.bold,
+                                            color: _primaryColor,
+                                          ),
+                                        ),
+                                      ),
+                                      filled: true,
+                                      fillColor: const Color(0xFFF8FAFC),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 16, vertical: 14),
+                                      border: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                        borderSide: BorderSide(
+                                            color: Colors.blueGrey.shade200),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                        borderSide: BorderSide(
+                                            color: Colors.blueGrey.shade200),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                        borderSide: BorderSide(
+                                            color: _primaryColor, width: 2),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Footer
+                        Container(
+                          width: double.infinity,
+                          color: const Color(0xFFF8FAFC),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              OutlinedButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.blueGrey[700],
+                                  side: BorderSide(
+                                      color: Colors.blueGrey.shade300),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 11),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
+                                ),
+                                child: const Text("Cancel",
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w600)),
+                              ),
+                              const SizedBox(width: 10),
+                              ElevatedButton.icon(
+                                onPressed: () async {
+                                  double amount =
+                                      double.tryParse(amtCtrl.text) ?? 0.0;
+                                  if (amount > 0) {
+                                    int offset =
+                                        selectedDate.weekday == DateTime.sunday
+                                            ? 0
+                                            : selectedDate.weekday;
+                                    DateTime correctWeekStart =
+                                        selectedDate.subtract(
+                                      Duration(days: offset),
+                                    );
+                                    String weekKey = DateFormat('yyyy-MM-dd')
+                                        .format(correctWeekStart);
+
+                                    await DatabaseHelper.instance
+                                        .markWeeklyPayment(
+                                      workerId,
+                                      weekKey,
+                                      amount,
+                                      paidDate: selectedDate.toIso8601String(),
+                                    );
+                                  }
+                                  if (context.mounted) Navigator.pop(ctx);
+                                  _loadPayment();
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _primaryColor,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 11),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
+                                  elevation: 1,
+                                ),
+                                icon: const Icon(Icons.check_rounded, size: 18),
+                                label: const Text("Add Payment",
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: const Text('Add Payment'),
                 ),
-              ],
+              ),
             );
           },
         );
