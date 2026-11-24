@@ -339,6 +339,8 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
       insetPadding: EdgeInsets.symmetric(
         horizontal: isWideScreen ? 32 : 16,
         vertical: 24,

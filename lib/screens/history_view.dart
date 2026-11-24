@@ -486,26 +486,28 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
               await showDialog(
                 context: context,
                 builder: (context) => Dialog(
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  clipBehavior: Clip.antiAlias,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                  surfaceTintColor: Colors.transparent,
                   insetPadding: EdgeInsets.symmetric(
                     horizontal:
                         MediaQuery.of(context).size.width > 900 ? 40 : 16,
                     vertical: 24,
                   ),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: 900,
-                      maxHeight: MediaQuery.of(context).size.height * 0.92,
-                    ),
-                    child: ExcludeSemantics(
-                      child: JobDetailScreen(
-                        job: job,
-                        ref: ref,
-                        isDialog: true,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: 900,
+                        maxHeight: MediaQuery.of(context).size.height * 0.92,
+                      ),
+                      child: ExcludeSemantics(
+                        child: JobDetailScreen(
+                          job: job,
+                          ref: ref,
+                          isDialog: true,
+                        ),
                       ),
                     ),
                   ),
@@ -1453,63 +1455,68 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         final dialogHeight = (screenSize.height * 0.9).clamp(400.0, 850.0);
 
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.white,
-          clipBehavior: Clip.antiAlias,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
           insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          child: SizedBox(
-            width: dialogWidth,
-            height: dialogHeight,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF1E293B),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
-                          const SizedBox(width: 10),
-                          Text(
-                            title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: SizedBox(
+              width: dialogWidth,
+              height: dialogHeight,
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    color: const Color(0xFF1E293B),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
+                            const SizedBox(width: 10),
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
-                        splashRadius: 20,
-                        onPressed: () => Navigator.pop(ctx),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: PdfPreview(
-                    build: (format) async => await _pdf.generateReceiptBytes(
-                      currentJob,
-                      isDetailed: isDetailed,
-                    ),
-                    pdfFileName: '$docName.pdf',
-                    allowPrinting: true,
-                    allowSharing: true,
-                    canChangePageFormat: false,
-                    canChangeOrientation: false,
-                    canDebug: false,
-                    loadingWidget: const Center(
-                      child: CircularProgressIndicator(),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                          splashRadius: 20,
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: Container(
+                      color: Colors.white,
+                      child: PdfPreview(
+                        build: (format) async => await _pdf.generateReceiptBytes(
+                          currentJob,
+                          isDetailed: isDetailed,
+                        ),
+                        pdfFileName: '$docName.pdf',
+                        allowPrinting: true,
+                        allowSharing: true,
+                        canChangePageFormat: false,
+                        canChangeOrientation: false,
+                        canDebug: false,
+                        loadingWidget: const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );

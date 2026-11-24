@@ -948,9 +948,7 @@ class _WagesViewState extends State<WagesView> {
               } catch (e) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to save attendance: $e'),
-                    ),
+                    SnackBar(content: Text('Failed to save attendance: $e')),
                   );
                 }
               }
@@ -962,28 +960,31 @@ class _WagesViewState extends State<WagesView> {
                 context: context,
                 barrierDismissible: true,
                 builder: (c) => Dialog(
-                  backgroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  clipBehavior: Clip.antiAlias,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                  surfaceTintColor: Colors.transparent,
                   insetPadding: EdgeInsets.symmetric(
-                    horizontal:
-                        MediaQuery.of(context).size.width > 900 ? 40 : 16,
+                    horizontal: MediaQuery.of(context).size.width > 900
+                        ? 40
+                        : 16,
                     vertical: 24,
                   ),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: 880,
-                      maxHeight: MediaQuery.of(context).size.height * 0.92,
-                    ),
-                    child: ExcludeSemantics(
-                      child: WorkerDetailScreen(
-                        workerData: worker,
-                        isDialog: true,
-                        onSave: handleSave,
-                        onEditProfile: () =>
-                            _showWorkerDialog(context, worker, index: index),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: 880,
+                        maxHeight: MediaQuery.of(context).size.height * 0.92,
+                      ),
+                      child: ExcludeSemantics(
+                        child: WorkerDetailScreen(
+                          workerData: worker,
+                          isDialog: true,
+                          onSave: handleSave,
+                          onEditProfile: () =>
+                              _showWorkerDialog(context, worker, index: index),
+                        ),
                       ),
                     ),
                   ),
@@ -1293,637 +1294,70 @@ class _WagesViewState extends State<WagesView> {
             }
             return Dialog(
               backgroundColor: Colors.transparent,
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 400),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Header
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _primaryColor,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(20),
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Header
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                existing == null ? '+' : 'W',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              existing == null
-                                  ? 'Add Worker Profile'
-                                  : 'Edit Profile',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
+                        color: _primaryColor,
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Text(
-                                ' ✕ ',
-                                style: TextStyle(
+                              child: Center(
+                                child: Text(
+                                  existing == null ? '+' : 'W',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                existing == null
+                                    ? 'Add Worker Profile'
+                                    : 'Edit Profile',
+                                style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 12,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Content
-                    Flexible(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // --- Employee Number (Editable) ---
-                            TextField(
-                              controller: empNumCtrl,
-                              keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
-                                labelText: 'Employee ID',
-                                prefixText: '# ',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            // --- Name ---
-                            TextField(
-                              controller: nameCtrl,
-                              decoration: const InputDecoration(
-                                labelText: 'Full Name',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            // --- Phone ---
-                            TextField(
-                              controller: phoneCtrl,
-                              keyboardType: TextInputType.phone,
-                              decoration: const InputDecoration(
-                                labelText: 'Phone Number (optional)',
-                                border: OutlineInputBorder(),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            // --- Status selector ---
-                            const Text(
-                              'Status',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                for (final s in [
-                                  'Active',
-                                  'Vacation',
-                                  'Left',
-                                ]) ...[
-                                  Expanded(
-                                    child: GestureDetector(
-                                      onTap: () =>
-                                          setDialogState(() => status = s),
-                                      child: AnimatedContainer(
-                                        duration: const Duration(
-                                          milliseconds: 180,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 10,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: status == s
-                                              ? (s == 'Active'
-                                                    ? Colors.green[500]
-                                                    : s == 'Vacation'
-                                                    ? Colors.blue[400]
-                                                    : Colors.grey[600])
-                                              : Colors.grey[100],
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          border: Border.all(
-                                            color: status == s
-                                                ? (s == 'Active'
-                                                      ? Colors.green[500]!
-                                                      : s == 'Vacation'
-                                                      ? Colors.blue[400]!
-                                                      : Colors.grey[600]!)
-                                                : Colors.grey[300]!,
-                                          ),
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            s,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.bold,
-                                              color: status == s
-                                                  ? Colors.white
-                                                  : Colors.black87,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  if (s != 'Left') const SizedBox(width: 8),
-                                ],
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            // --- Wage type ---
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () => setDialogState(
-                                      () => wageType = 'daily',
-                                    ),
-                                    child: AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 180,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: wageType == 'daily'
-                                            ? _primaryColor
-                                            : Colors.grey[100],
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: wageType == 'daily'
-                                              ? _primaryColor
-                                              : Colors.grey[300]!,
-                                        ),
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          'Daily Wage',
-                                          style: TextStyle(
-                                            color: wageType == 'daily'
-                                                ? Colors.white
-                                                : Colors.black87,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () => setDialogState(
-                                      () => wageType = 'piece',
-                                    ),
-                                    child: AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 180,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: wageType == 'piece'
-                                            ? _primaryColor
-                                            : Colors.grey[100],
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: wageType == 'piece'
-                                              ? _primaryColor
-                                              : Colors.grey[300]!,
-                                        ),
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          'Piece Rate',
-                                          style: TextStyle(
-                                            color: wageType == 'piece'
-                                                ? Colors.white
-                                                : Colors.black87,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            // --- Rate field with +/- increment buttons ---
-                            const Text(
-                              'Daily / Base Rate',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                // Decrement button
-                                GestureDetector(
-                                  onTap: () => adjustRate(setDialogState, -50),
-                                  onLongPress: () =>
-                                      adjustRate(setDialogState, -500),
-                                  child: Container(
-                                    width: 48,
-                                    height: 48,
-                                    decoration: BoxDecoration(
-                                      color: Colors.red[50],
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                        color: Colors.red[200]!,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '-50',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.red[700],
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                // Rate text field
-                                Expanded(
-                                  child: TextField(
-                                    controller: rateCtrl,
-                                    keyboardType: TextInputType.number,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    decoration: InputDecoration(
-                                      labelText: wageType == 'daily'
-                                          ? '8-hr Shift'
-                                          : 'Default Rate',
-                                      floatingLabelBehavior:
-                                          FloatingLabelBehavior.always,
-                                      border: const OutlineInputBorder(),
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 12,
-                                          ),
-                                      prefixText: '₹ ',
-                                    ),
-                                    onChanged: (_) => setDialogState(() {}),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                // Increment button
-                                GestureDetector(
-                                  onTap: () => adjustRate(setDialogState, 50),
-                                  onLongPress: () =>
-                                      adjustRate(setDialogState, 500),
-                                  child: Container(
-                                    width: 48,
-                                    height: 48,
-                                    decoration: BoxDecoration(
-                                      color: Colors.green[50],
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                        color: Colors.green[200]!,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '+50',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.green[700],
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (wageType == 'piece') ...[
-                              const SizedBox(height: 24),
-                              const Divider(height: 1),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Define Specific Piece Items',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: Colors.blueGrey,
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              const Text(
-                                'Define quick-select items to speed up entry later.',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              ...pieceItems.asMap().entries.map(
-                                (e) => Container(
-                                  margin: const EdgeInsets.only(bottom: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[50],
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.grey[200]!,
-                                    ),
-                                  ),
-                                  child: ListTile(
-                                    dense: true,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 0,
-                                    ),
-                                    visualDensity: VisualDensity.compact,
-                                    title: Text(
-                                      e.value['name'],
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 4,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.green[50],
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            '₹${e.value['rate']}',
-                                            style: TextStyle(
-                                              color: Colors.green[700],
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        GestureDetector(
-                                          onTap: () => setDialogState(
-                                            () => pieceItems.removeAt(e.key),
-                                          ),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(4),
-                                            decoration: BoxDecoration(
-                                              color: Colors.red[50],
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                            ),
-                                            child: Text(
-                                              ' ✕ ',
-                                              style: TextStyle(
-                                                color: Colors.red[700],
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    flex: 3,
-                                    child: TextField(
-                                      controller: pNameCtrl,
-                                      decoration: const InputDecoration(
-                                        hintText: 'Item (e.g. Leveling)',
-                                        hintStyle: TextStyle(fontSize: 12),
-                                        border: OutlineInputBorder(),
-                                        contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 10,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    flex: 2,
-                                    child: TextField(
-                                      controller: pRateCtrl,
-                                      keyboardType: TextInputType.number,
-                                      decoration: const InputDecoration(
-                                        hintText: 'Rate (₹)',
-                                        hintStyle: TextStyle(fontSize: 12),
-                                        border: OutlineInputBorder(),
-                                        contentPadding: EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 10,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: () {
-                                      if (pNameCtrl.text.isNotEmpty &&
-                                          pRateCtrl.text.isNotEmpty) {
-                                        setDialogState(() {
-                                          pieceItems.add({
-                                            'name': pNameCtrl.text,
-                                            'rate':
-                                                double.tryParse(
-                                                  pRateCtrl.text,
-                                                ) ??
-                                                0.0,
-                                          });
-                                          pNameCtrl.clear();
-                                          pRateCtrl.clear();
-                                        });
-                                      }
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 12,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.green,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Text(
-                                        '+',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
-                                          height: 1.0,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                            const SizedBox(height: 24),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: () async {
-                                  if (nameCtrl.text.trim().isEmpty) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Please enter a valid name for the worker.',
-                                        ),
-                                        backgroundColor: Colors.red,
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                    return;
-                                  }
-
-                                  try {
-                                    final updatedData = {
-                                      'employee_number':
-                                          int.tryParse(
-                                            empNumCtrl.text.trim(),
-                                          ) ??
-                                          autoEmpNum,
-                                      'name': nameCtrl.text.trim(),
-                                      'rate':
-                                          double.tryParse(rateCtrl.text) ?? 0.0,
-                                      'wage_type': wageType,
-                                      'piece_items': pieceItems,
-                                      'employee_phone': phoneCtrl.text.trim(),
-                                      'status': status,
-                                    };
-                                    await _addOrUpdateWorker(
-                                      updatedData,
-                                      index: index,
-                                    );
-                                    final mergedWorker = existing != null
-                                        ? Map<String, dynamic>.from(existing)
-                                        : <String, dynamic>{};
-                                    mergedWorker.addAll(updatedData);
-
-                                    if (context.mounted) {
-                                      Navigator.pop(context, mergedWorker);
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Worker profile saved successfully!',
-                                          ),
-                                          backgroundColor: Colors.green,
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    debugPrint('Error saving worker: $e');
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Failed to save worker profile. Please try again.',
-                                          ),
-                                          backgroundColor: Colors.red,
-                                          behavior: SnackBarBehavior.floating,
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _primaryColor,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  shape: BoxShape.circle,
                                 ),
                                 child: const Text(
-                                  'SAVE PROFILE',
+                                  ' ✕ ',
                                   style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                    letterSpacing: 1.0,
                                   ),
                                 ),
                               ),
@@ -1931,8 +1365,600 @@ class _WagesViewState extends State<WagesView> {
                           ],
                         ),
                       ),
-                    ),
-                  ],
+                      // Content
+                      Flexible(
+                        child: Container(
+                          color: Colors.white,
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // --- Employee Number (Editable) ---
+                                TextField(
+                                  controller: empNumCtrl,
+                                  keyboardType: TextInputType.number,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Employee ID',
+                                    prefixText: '# ',
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                // --- Name ---
+                                TextField(
+                                  controller: nameCtrl,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Full Name',
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                // --- Phone ---
+                                TextField(
+                                  controller: phoneCtrl,
+                                  keyboardType: TextInputType.phone,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Phone Number (optional)',
+                                    border: OutlineInputBorder(),
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 12,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                // --- Status selector ---
+                                const Text(
+                                  'Status',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    for (final s in [
+                                      'Active',
+                                      'Vacation',
+                                      'Left',
+                                    ]) ...[
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: () =>
+                                              setDialogState(() => status = s),
+                                          child: AnimatedContainer(
+                                            duration: const Duration(
+                                              milliseconds: 180,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 10,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: status == s
+                                                  ? (s == 'Active'
+                                                        ? Colors.green[500]
+                                                        : s == 'Vacation'
+                                                        ? Colors.blue[400]
+                                                        : Colors.grey[600])
+                                                  : Colors.grey[100],
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: status == s
+                                                    ? (s == 'Active'
+                                                          ? Colors.green[500]!
+                                                          : s == 'Vacation'
+                                                          ? Colors.blue[400]!
+                                                          : Colors.grey[600]!)
+                                                    : Colors.grey[300]!,
+                                              ),
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                s,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: status == s
+                                                      ? Colors.white
+                                                      : Colors.black87,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      if (s != 'Left') const SizedBox(width: 8),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                // --- Wage type ---
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () => setDialogState(
+                                          () => wageType = 'daily',
+                                        ),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 180,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: wageType == 'daily'
+                                                ? _primaryColor
+                                                : Colors.grey[100],
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: wageType == 'daily'
+                                                  ? _primaryColor
+                                                  : Colors.grey[300]!,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              'Daily Wage',
+                                              style: TextStyle(
+                                                color: wageType == 'daily'
+                                                    ? Colors.white
+                                                    : Colors.black87,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () => setDialogState(
+                                          () => wageType = 'piece',
+                                        ),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 180,
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: wageType == 'piece'
+                                                ? _primaryColor
+                                                : Colors.grey[100],
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: wageType == 'piece'
+                                                  ? _primaryColor
+                                                  : Colors.grey[300]!,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              'Piece Rate',
+                                              style: TextStyle(
+                                                color: wageType == 'piece'
+                                                    ? Colors.white
+                                                    : Colors.black87,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                // --- Rate field with +/- increment buttons ---
+                                const Text(
+                                  'Daily / Base Rate',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    // Decrement button
+                                    GestureDetector(
+                                      onTap: () =>
+                                          adjustRate(setDialogState, -50),
+                                      onLongPress: () =>
+                                          adjustRate(setDialogState, -500),
+                                      child: Container(
+                                        width: 48,
+                                        height: 48,
+                                        decoration: BoxDecoration(
+                                          color: Colors.red[50],
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.red[200]!,
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            '-50',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.red[700],
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    // Rate text field
+                                    Expanded(
+                                      child: TextField(
+                                        controller: rateCtrl,
+                                        keyboardType: TextInputType.number,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        decoration: InputDecoration(
+                                          labelText: wageType == 'daily'
+                                              ? '8-hr Shift'
+                                              : 'Default Rate',
+                                          floatingLabelBehavior:
+                                              FloatingLabelBehavior.always,
+                                          border: const OutlineInputBorder(),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                horizontal: 12,
+                                                vertical: 12,
+                                              ),
+                                          prefixText: '₹ ',
+                                        ),
+                                        onChanged: (_) => setDialogState(() {}),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    // Increment button
+                                    GestureDetector(
+                                      onTap: () =>
+                                          adjustRate(setDialogState, 50),
+                                      onLongPress: () =>
+                                          adjustRate(setDialogState, 500),
+                                      child: Container(
+                                        width: 48,
+                                        height: 48,
+                                        decoration: BoxDecoration(
+                                          color: Colors.green[50],
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.green[200]!,
+                                          ),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            '+50',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.green[700],
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (wageType == 'piece') ...[
+                                  const SizedBox(height: 24),
+                                  const Divider(height: 1),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Define Specific Piece Items',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: Colors.blueGrey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 5),
+                                  const Text(
+                                    'Define quick-select items to speed up entry later.',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ...pieceItems.asMap().entries.map(
+                                    (e) => Container(
+                                      margin: const EdgeInsets.only(bottom: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[50],
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Colors.grey[200]!,
+                                        ),
+                                      ),
+                                      child: ListTile(
+                                        dense: true,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 0,
+                                            ),
+                                        visualDensity: VisualDensity.compact,
+                                        title: Text(
+                                          e.value['name'],
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        trailing: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green[50],
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: Text(
+                                                '₹${e.value['rate']}',
+                                                style: TextStyle(
+                                                  color: Colors.green[700],
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            GestureDetector(
+                                              onTap: () => setDialogState(
+                                                () =>
+                                                    pieceItems.removeAt(e.key),
+                                              ),
+                                              child: Container(
+                                                padding: const EdgeInsets.all(
+                                                  4,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red[50],
+                                                  borderRadius:
+                                                      BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  ' ✕ ',
+                                                  style: TextStyle(
+                                                    color: Colors.red[700],
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        flex: 3,
+                                        child: TextField(
+                                          controller: pNameCtrl,
+                                          decoration: const InputDecoration(
+                                            hintText: 'Item (e.g. Leveling)',
+                                            hintStyle: TextStyle(fontSize: 12),
+                                            border: OutlineInputBorder(),
+                                            contentPadding:
+                                                EdgeInsets.symmetric(
+                                                  horizontal: 10,
+                                                  vertical: 10,
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        flex: 2,
+                                        child: TextField(
+                                          controller: pRateCtrl,
+                                          keyboardType: TextInputType.number,
+                                          decoration: const InputDecoration(
+                                            hintText: 'Rate (₹)',
+                                            hintStyle: TextStyle(fontSize: 12),
+                                            border: OutlineInputBorder(),
+                                            contentPadding:
+                                                EdgeInsets.symmetric(
+                                                  horizontal: 10,
+                                                  vertical: 10,
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      GestureDetector(
+                                        onTap: () {
+                                          if (pNameCtrl.text.isNotEmpty &&
+                                              pRateCtrl.text.isNotEmpty) {
+                                            setDialogState(() {
+                                              pieceItems.add({
+                                                'name': pNameCtrl.text,
+                                                'rate':
+                                                    double.tryParse(
+                                                      pRateCtrl.text,
+                                                    ) ??
+                                                    0.0,
+                                              });
+                                              pNameCtrl.clear();
+                                              pRateCtrl.clear();
+                                            });
+                                          }
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 12,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.green,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: const Text(
+                                            '+',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18,
+                                              height: 1.0,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 50,
+                                  child: ElevatedButton(
+                                    onPressed: () async {
+                                      if (nameCtrl.text.trim().isEmpty) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Please enter a valid name for the worker.',
+                                            ),
+                                            backgroundColor: Colors.red,
+                                            behavior: SnackBarBehavior.floating,
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      try {
+                                        final updatedData = {
+                                          'employee_number':
+                                              int.tryParse(
+                                                empNumCtrl.text.trim(),
+                                              ) ??
+                                              autoEmpNum,
+                                          'name': nameCtrl.text.trim(),
+                                          'rate':
+                                              double.tryParse(rateCtrl.text) ??
+                                              0.0,
+                                          'wage_type': wageType,
+                                          'piece_items': pieceItems,
+                                          'employee_phone': phoneCtrl.text
+                                              .trim(),
+                                          'status': status,
+                                        };
+                                        await _addOrUpdateWorker(
+                                          updatedData,
+                                          index: index,
+                                        );
+                                        final mergedWorker = existing != null
+                                            ? Map<String, dynamic>.from(
+                                                existing,
+                                              )
+                                            : <String, dynamic>{};
+                                        mergedWorker.addAll(updatedData);
+
+                                        if (context.mounted) {
+                                          Navigator.pop(context, mergedWorker);
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Worker profile saved successfully!',
+                                              ),
+                                              backgroundColor: Colors.green,
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        debugPrint('Error saving worker: $e');
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Failed to save worker profile. Please try again.',
+                                              ),
+                                              backgroundColor: Colors.red,
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: _primaryColor,
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'SAVE PROFILE',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             );
@@ -2058,8 +2084,8 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
     // If worker already has an ID, pre-fill with their current one (editable).
     // If pending, pre-fill with next available auto-increment.
     final int maxNum = await DatabaseHelper.instance.getMaxEmployeeNumber();
-    final int suggestedEmpNum = (_localWorkerData['employee_number'] as int?)
-        ?? (maxNum + 1);
+    final int suggestedEmpNum =
+        (_localWorkerData['employee_number'] as int?) ?? (maxNum + 1);
 
     final nameCtrl = TextEditingController(
       text: _localWorkerData['name'] ?? '',
@@ -2071,9 +2097,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
       text: _localWorkerData['employee_phone'] ?? '',
     );
     // Always editable — pre-filled with existing ID or next auto-increment.
-    final empNumCtrl = TextEditingController(
-      text: suggestedEmpNum.toString(),
-    );
+    final empNumCtrl = TextEditingController(text: suggestedEmpNum.toString());
     String status = _localWorkerData['status'] ?? 'Active';
 
     void adjustRate(StateSetter setS, double delta) {
@@ -2358,8 +2382,9 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                         final newPhone = phoneCtrl.text.trim();
                         // Employee number: always use what's in the field.
                         // User can change it anytime — just re-save.
-                        final int? newEmpNum =
-                            int.tryParse(empNumCtrl.text.trim());
+                        final int? newEmpNum = int.tryParse(
+                          empNumCtrl.text.trim(),
+                        );
 
                         // Persist to DB first to ensure it doesn't fail
                         await DatabaseHelper.instance.saveWorker({
@@ -3516,8 +3541,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
               dailyRecords.add({
                 'date': displayDate,
                 'work': 'Standard Pieces',
-                'qty_rate':
-                    '${p.toInt()} pcs @ Rs. ${baseRate.round()}',
+                'qty_rate': '${p.toInt()} pcs @ Rs. ${baseRate.round()}',
                 'earned': (p * baseRate).round().toString(),
               });
             }
@@ -3536,8 +3560,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
               dailyRecords.add({
                 'date': displayDate,
                 'work': tName,
-                'qty_rate':
-                    '${tQty.toInt()} pcs @ Rs. ${tRate.round()}',
+                'qty_rate': '${tQty.toInt()} pcs @ Rs. ${tRate.round()}',
                 'earned': tTotal.round().toString(),
               });
             }
@@ -3559,8 +3582,10 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
           .toString()
           .replaceAll(RegExp(r'[^\w\s]+'), '')
           .trim();
-      final docName = 'PaySlip_${sanitizedName}_$_periodLabel'
-          .replaceAll(RegExp(r'[^\w\s-]+'), '');
+      final docName = 'PaySlip_${sanitizedName}_$_periodLabel'.replaceAll(
+        RegExp(r'[^\w\s-]+'),
+        '',
+      );
 
       if (!mounted) return;
       showDialog(
@@ -3571,85 +3596,92 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
           final dialogHeight = (screenSize.height * 0.9).clamp(400.0, 850.0);
 
           return Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            backgroundColor: Colors.white,
-            clipBehavior: Clip.antiAlias,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            shadowColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
             insetPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 20,
             ),
-            child: SizedBox(
-              width: dialogWidth,
-              height: dialogHeight,
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                    color: const Color(0xFF1E293B),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.picture_as_pdf_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Payslip Preview (${_localWorkerData['name']} - $_periodLabel)',
-                              style: const TextStyle(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: SizedBox(
+                width: dialogWidth,
+                height: dialogHeight,
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
+                      color: const Color(0xFF1E293B),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.picture_as_pdf_rounded,
                                 color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                                size: 20,
                               ),
-                            ),
-                          ],
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.close_rounded,
-                            color: Colors.white,
-                            size: 22,
+                              const SizedBox(width: 10),
+                              Text(
+                                'Payslip Preview (${_localWorkerData['name']} - $_periodLabel)',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
-                          onPressed: () => Navigator.pop(ctx),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: Colors.white,
+                              size: 22,
+                            ),
+                            onPressed: () => Navigator.pop(ctx),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Container(
+                        color: Colors.white,
+                        child: PdfPreview(
+                          build: (format) async =>
+                              await WagePdfService.generatePayslip(
+                                workerName:
+                                    _localWorkerData['name'] ?? 'Worker',
+                                periodLabel: _periodLabel,
+                                totalEarned: currentEarned,
+                                totalPaid: currentPaid,
+                                daysWorked: daysWorked,
+                                absentDays: absentDays,
+                                normalHours: totalNormalHours,
+                                otHours: totalOtHours,
+                                pieces: totalPieces,
+                                tasks: totalTasks,
+                                dailyRecords: dailyRecords,
+                              ),
+                          pdfFileName: '$docName.pdf',
+                          allowPrinting: true,
+                          allowSharing: true,
+                          canChangePageFormat: false,
+                          canChangeOrientation: false,
+                          canDebug: false,
+                          loadingWidget: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: PdfPreview(
-                      build: (format) async => await WagePdfService.generatePayslip(
-                        workerName: _localWorkerData['name'] ?? 'Worker',
-                        periodLabel: _periodLabel,
-                        totalEarned: currentEarned,
-                        totalPaid: currentPaid,
-                        daysWorked: daysWorked,
-                        absentDays: absentDays,
-                        normalHours: totalNormalHours,
-                        otHours: totalOtHours,
-                        pieces: totalPieces,
-                        tasks: totalTasks,
-                        dailyRecords: dailyRecords,
-                      ),
-                      pdfFileName: '$docName.pdf',
-                      allowPrinting: true,
-                      allowSharing: true,
-                      canChangePageFormat: false,
-                      canChangeOrientation: false,
-                      canDebug: false,
-                      loadingWidget: const Center(
-                        child: CircularProgressIndicator(),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );
@@ -3687,9 +3719,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(
-            widget.isDialog
-                ? Icons.close_rounded
-                : Icons.arrow_back_rounded,
+            widget.isDialog ? Icons.close_rounded : Icons.arrow_back_rounded,
           ),
           tooltip: widget.isDialog ? 'Close' : 'Back',
           onPressed: () => Navigator.pop(context),
@@ -3821,11 +3851,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
               children: [
                 _buildWorkerIdentityBar(),
                 const SizedBox(height: 10),
-                _buildStatsRow(
-                  overBg,
-                  overColor,
-                  overStatus,
-                ),
+                _buildStatsRow(overBg, overColor, overStatus),
                 const SizedBox(height: 10),
                 _buildPeriodNavRow(),
                 const SizedBox(height: 8),
@@ -3897,8 +3923,8 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                     final Color badgeBg = st == 'Active'
                         ? Colors.green[400]!
                         : st == 'Vacation'
-                            ? Colors.blue[300]!
-                            : Colors.grey[500]!;
+                        ? Colors.blue[300]!
+                        : Colors.grey[500]!;
                     return Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 7,
@@ -3999,11 +4025,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
     );
   }
 
-  Widget _buildStatsRow(
-    Color overBg,
-    Color overColor,
-    String overStatus,
-  ) {
+  Widget _buildStatsRow(Color overBg, Color overColor, String overStatus) {
     final paidAmt = _currentPaymentHistory.fold(
       0.0,
       (s, e) => s + (e['amount'] as num).toDouble(),
@@ -4031,9 +4053,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
             decoration: BoxDecoration(
               color: overBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: overColor.withValues(alpha: 0.25),
-              ),
+              border: Border.all(color: overColor.withValues(alpha: 0.25)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -4146,10 +4166,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
             ),
             Text(
               _periodLabel,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
             IconButton(
               icon: const Icon(Icons.chevron_right_rounded, size: 22),
@@ -4183,8 +4200,9 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color:
-                            _isWeeklyView ? Colors.white : Colors.transparent,
+                        color: _isWeeklyView
+                            ? Colors.white
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(6),
                         boxShadow: _isWeeklyView
                             ? [
@@ -4202,8 +4220,9 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                           fontWeight: _isWeeklyView
                               ? FontWeight.bold
                               : FontWeight.normal,
-                          color:
-                              _isWeeklyView ? _primaryColor : Colors.grey[700],
+                          color: _isWeeklyView
+                              ? _primaryColor
+                              : Colors.grey[700],
                         ),
                       ),
                     ),
@@ -4221,8 +4240,9 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color:
-                            !_isWeeklyView ? Colors.white : Colors.transparent,
+                        color: !_isWeeklyView
+                            ? Colors.white
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(6),
                         boxShadow: !_isWeeklyView
                             ? [
@@ -4240,8 +4260,9 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                           fontWeight: !_isWeeklyView
                               ? FontWeight.bold
                               : FontWeight.normal,
-                          color:
-                              !_isWeeklyView ? _primaryColor : Colors.grey[700],
+                          color: !_isWeeklyView
+                              ? _primaryColor
+                              : Colors.grey[700],
                         ),
                       ),
                     ),
@@ -4608,10 +4629,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
                     children: [
                       Text(
                         "${DateFormat('dd MMM').format(pDate)}: ",
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey[700],
-                        ),
+                        style: TextStyle(fontSize: 11, color: Colors.grey[700]),
                       ),
                       Text(
                         "\u20b9${p['amount']}",

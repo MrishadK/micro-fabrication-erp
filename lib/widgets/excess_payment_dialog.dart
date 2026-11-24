@@ -23,7 +23,7 @@ class _ExcessPaymentDialogState extends State<ExcessPaymentDialog> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _unpaidBills = [];
   final Color _primaryColor = const Color(0xFF1A237E);
-  
+
   late double _remainingExcess;
   double _totalApplied = 0.0;
 
@@ -39,8 +39,11 @@ class _ExcessPaymentDialogState extends State<ExcessPaymentDialog> {
       final clientName = widget.currentJob['client_name'] ?? '';
       final currentJobId = widget.currentJob['id'] ?? -1;
 
-      final bills = await DatabaseHelper.instance.getClientUnpaidBills(clientName, currentJobId);
-      
+      final bills = await DatabaseHelper.instance.getClientUnpaidBills(
+        clientName,
+        currentJobId,
+      );
+
       // Filter out bills with no due
       final List<Map<String, dynamic>> dueBills = [];
       for (var bill in bills) {
@@ -66,7 +69,9 @@ class _ExcessPaymentDialogState extends State<ExcessPaymentDialog> {
 
   Future<void> _applyExcessToBill(Map<String, dynamic> targetBill) async {
     final double targetDue = targetBill['calculated_due'];
-    final double applyAmount = _remainingExcess <= targetDue ? _remainingExcess : targetDue;
+    final double applyAmount = _remainingExcess <= targetDue
+        ? _remainingExcess
+        : targetDue;
 
     if (applyAmount <= 0) return;
 
@@ -80,7 +85,7 @@ class _ExcessPaymentDialogState extends State<ExcessPaymentDialog> {
       setState(() {
         _totalApplied += applyAmount;
         _remainingExcess -= applyAmount;
-        
+
         targetBill['calculated_due'] -= applyAmount;
         if (targetBill['calculated_due'] <= 0) {
           _unpaidBills.removeWhere((b) => b['id'] == targetBill['id']);
@@ -92,9 +97,9 @@ class _ExcessPaymentDialogState extends State<ExcessPaymentDialog> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error applying excess: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error applying excess: $e")));
       }
     }
   }
@@ -102,77 +107,92 @@ class _ExcessPaymentDialogState extends State<ExcessPaymentDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: Colors.white,
-      clipBehavior: Clip.antiAlias,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-      child: Container(
-        width: double.infinity,
-        constraints: const BoxConstraints(maxWidth: 440, maxHeight: 600),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 440, maxHeight: 600),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
                 color: _primaryColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Column(
-                children: [
-                  const Icon(Icons.attach_money_rounded, color: Colors.white, size: 40),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Excess Payment: ₹${_remainingExcess.toStringAsFixed(0)}",
-                    style: const TextStyle(
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.attach_money_rounded,
                       color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                      size: 40,
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "This amount exceeds the current bill.\nApply to another unpaid bill?",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      "Excess Payment: ₹${_remainingExcess.toStringAsFixed(0)}",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "This amount exceeds the current bill.\nApply to another unpaid bill?",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            // Body
-            Flexible(
-              child: _isLoading
-                  ? const Padding(
-                      padding: EdgeInsets.all(40),
-                      child: CircularProgressIndicator(),
-                    )
-                  : _unpaidBills.isEmpty
+              // Body
+              Flexible(
+                child: Container(
+                  color: Colors.white,
+                  child: _isLoading
+                      ? const Padding(
+                          padding: EdgeInsets.all(40),
+                          child: CircularProgressIndicator(),
+                        )
+                      : _unpaidBills.isEmpty
                       ? Padding(
                           padding: const EdgeInsets.all(40),
                           child: Text(
-                            _totalApplied > 0 
-                                ? "All other bills are paid." 
+                            _totalApplied > 0
+                                ? "All other bills are paid."
                                 : "No other unpaid bills found for this client.",
                             textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.grey, fontSize: 16),
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 16,
+                            ),
                           ),
                         )
                       : ListView.separated(
                           padding: const EdgeInsets.all(16),
                           shrinkWrap: true,
                           itemCount: _unpaidBills.length,
-                          separatorBuilder: (ctx, i) => const Divider(height: 16),
+                          separatorBuilder: (ctx, i) =>
+                              const Divider(height: 16),
                           itemBuilder: (ctx, i) {
                             final bill = _unpaidBills[i];
-                            final String billNo = bill['bill_no']?.toString().isNotEmpty == true 
-                                ? bill['bill_no'].toString() 
+                            final String billNo =
+                                bill['bill_no']?.toString().isNotEmpty == true
+                                ? bill['bill_no'].toString()
                                 : bill['id'].toString();
-                            final DateTime date = DateTime.tryParse(bill['created_at'] ?? '') ?? DateTime.now();
-                            final String dateStr = DateFormat('dd MMM yyyy').format(date);
+                            final DateTime date =
+                                DateTime.tryParse(bill['created_at'] ?? '') ??
+                                DateTime.now();
+                            final String dateStr = DateFormat(
+                              'dd MMM yyyy',
+                            ).format(date);
                             final double due = bill['calculated_due'];
 
                             return Card(
@@ -188,7 +208,8 @@ class _ExcessPaymentDialogState extends State<ExcessPaymentDialog> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
                                           "Bill #$billNo",
@@ -208,7 +229,8 @@ class _ExcessPaymentDialogState extends State<ExcessPaymentDialog> {
                                     ),
                                     const SizedBox(height: 8),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
                                           "DUE: ₹${due.toStringAsFixed(0)}",
@@ -219,52 +241,62 @@ class _ExcessPaymentDialogState extends State<ExcessPaymentDialog> {
                                           ),
                                         ),
                                         ElevatedButton(
-                                          onPressed: () => _applyExcessToBill(bill),
+                                          onPressed: () =>
+                                              _applyExcessToBill(bill),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: _primaryColor,
                                             foregroundColor: Colors.white,
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(8),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
-                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 8,
+                                            ),
                                           ),
                                           child: Text(
                                             "APPLY ₹${(_remainingExcess <= due ? _remainingExcess : due).toStringAsFixed(0)}",
-                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
                                       ],
-                                    )
+                                    ),
                                   ],
                                 ),
                               ),
                             );
                           },
                         ),
-            ),
-
-            // Footer
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: OutlinedButton(
-                onPressed: () => Navigator.pop(context, _totalApplied),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.grey[800],
-                  minimumSize: const Size.fromHeight(48),
-                  side: BorderSide(color: Colors.grey[400]!),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  _totalApplied > 0 
-                      ? "Done — Keep ₹${_remainingExcess.toStringAsFixed(0)} as Credit"
-                      : "Skip — Keep as Credit on Current Bill",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
-            ),
-          ],
+
+              // Footer
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.all(16),
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context, _totalApplied),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.grey[800],
+                    minimumSize: const Size.fromHeight(48),
+                    side: BorderSide(color: Colors.grey[400]!),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    _totalApplied > 0
+                        ? "Done — Keep ₹${_remainingExcess.toStringAsFixed(0)} as Credit"
+                        : "Skip — Keep as Credit on Current Bill",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

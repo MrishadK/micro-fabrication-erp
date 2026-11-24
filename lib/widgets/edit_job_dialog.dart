@@ -416,6 +416,8 @@ class _EditJobDialogState extends State<EditJobDialog> {
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
@@ -427,51 +429,54 @@ class _EditJobDialogState extends State<EditJobDialog> {
           child: ScaffoldMessenger(
             key: _scaffoldMessengerKey,
             child: Scaffold(
-              backgroundColor: Colors.white,
+              backgroundColor: Colors.transparent,
               body: Column(
                 children: [
                   _buildHeader(),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        children: [
-                          _buildSectionCard(
-                            title: "Client Information",
-                            icon: Icons.person_outline,
-                            content: _buildClientInfo(),
+                  Expanded(
+                    child: Container(
+                      color: Colors.white,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              _buildSectionCard(
+                                title: "Client Information",
+                                icon: Icons.person_outline,
+                                content: _buildClientInfo(),
+                              ),
+                              const SizedBox(height: 20),
+                              _buildItemsEditor(),
+                              const SizedBox(height: 20),
+                              _buildSectionCard(
+                                title: "Job Requirements",
+                                icon: Icons.assignment_outlined,
+                                content: _buildJobDetails(),
+                              ),
+                              const SizedBox(height: 20),
+                              _buildSectionCard(
+                                title: "Financial Ledger",
+                                icon: Icons.account_balance_wallet_outlined,
+                                content: _buildFinancialLedger(),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 20),
-                          _buildItemsEditor(),
-                          const SizedBox(height: 20),
-                          _buildSectionCard(
-                            title: "Job Requirements",
-                            icon: Icons.assignment_outlined,
-                            content: _buildJobDetails(),
-                          ),
-                          const SizedBox(height: 20),
-                          _buildSectionCard(
-                            title: "Financial Ledger",
-                            icon: Icons.account_balance_wallet_outlined,
-                            content: _buildFinancialLedger(),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                _buildFooter(),
-              ],
+                  _buildFooter(),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildItemsEditor() {
     return Column(

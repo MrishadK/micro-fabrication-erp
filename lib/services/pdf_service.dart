@@ -755,28 +755,16 @@ class PdfService {
               ),
               pw.SizedBox(
                 width: width,
-                child: value == "-"
-                    ? pw.Text(
-                        "-",
-                        style: pw.TextStyle(
-                          font: font,
-                          fontSize: finalFontSize,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      )
-                    : pw.FittedBox(
-                        fit: pw.BoxFit.scaleDown,
-                        alignment: pw.Alignment.bottomLeft,
-                        child: pw.Text(
-                          value,
-                          maxLines: 1,
-                          style: pw.TextStyle(
-                            font: font,
-                            fontSize: finalFontSize,
-                            fontWeight: pw.FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                child: pw.Text(
+                  value,
+                  maxLines: 1,
+                  overflow: pw.TextOverflow.clip,
+                  style: pw.TextStyle(
+                    font: font,
+                    fontSize: finalFontSize,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),

@@ -74,86 +74,79 @@ class _DeliveryDialogState extends ConsumerState<DeliveryDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 500, maxHeight: 750),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              // --- HEADER ---
-              Container(
-                padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1A237E),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500, maxHeight: 750),
+            child: Column(
+              children: [
+                // --- HEADER ---
+                Container(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+                  color: const Color(0xFF1A237E),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.local_shipping_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.local_shipping_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Dispatch Manager",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                      const SizedBox(width: 16),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Dispatch Manager",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          Text(
-                            "Record outgoing items",
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
+                            Text(
+                              "Record outgoing items",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      tooltip: "Close",
-                    ),
-                  ],
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        tooltip: "Close",
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              // --- CONTENT ---
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _outputItems.isEmpty
-                    ? _buildEmptyState()
-                    : ListView(
-                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-                        children: [
+                // --- CONTENT ---
+                Expanded(
+                  child: Container(
+                    color: Colors.white,
+                    child: _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _outputItems.isEmpty
+                        ? _buildEmptyState()
+                        : ListView(
+                            padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+                            children: [
                           ..._outputItems.map((item) => Padding(
                             padding: const EdgeInsets.only(bottom: 16),
                             child: _DispatchItemCard(
@@ -193,8 +186,10 @@ class _DeliveryDialogState extends ConsumerState<DeliveryDialog> {
                           ],
                         ],
                       ),
-              ),
-            ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

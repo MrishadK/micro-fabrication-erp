@@ -197,21 +197,22 @@ class JobCardMobile extends StatelessWidget {
         final dialogHeight = (screenSize.height * 0.9).clamp(400.0, 850.0);
 
         return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: Colors.white,
-          clipBehavior: Clip.antiAlias,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
           insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          child: SizedBox(
-            width: dialogWidth,
-            height: dialogHeight,
-            child: Column(
-              children: [
-                // Top Header Bar
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF1E293B),
-                  ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: SizedBox(
+              width: dialogWidth,
+              height: dialogHeight,
+              child: Column(
+                children: [
+                  // Top Header Bar
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    color: const Color(0xFF1E293B),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -239,26 +240,30 @@ class JobCardMobile extends StatelessWidget {
                 ),
                 // In-App PDF Preview with built-in Print button and zoom controls
                 Expanded(
-                  child: PdfPreview(
-                    build: (format) async => await _pdf.generateReceiptBytes(
-                      job,
-                      isDetailed: isDetailed,
-                    ),
-                    pdfFileName: '$docName.pdf',
-                    allowPrinting: true,
-                    allowSharing: true,
-                    canChangePageFormat: false,
-                    canChangeOrientation: false,
-                    canDebug: false,
-                    loadingWidget: const Center(
-                      child: CircularProgressIndicator(),
+                  child: Container(
+                    color: Colors.white,
+                    child: PdfPreview(
+                      build: (format) async => await _pdf.generateReceiptBytes(
+                        job,
+                        isDetailed: isDetailed,
+                      ),
+                      pdfFileName: '$docName.pdf',
+                      allowPrinting: true,
+                      allowSharing: true,
+                      canChangePageFormat: false,
+                      canChangeOrientation: false,
+                      canDebug: false,
+                      loadingWidget: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-        );
+        ),
+      );
       },
     );
   }
@@ -304,15 +309,20 @@ class JobCardMobile extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Colors.white,
-        clipBehavior: Clip.antiAlias,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-            child: Column(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            color: Colors.white,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -576,8 +586,9 @@ class JobCardMobile extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  ));
+}
 
   @override
   Widget build(BuildContext context) {
@@ -1364,12 +1375,17 @@ class JobCardMobile extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        backgroundColor: Colors.white,
-        clipBehavior: Clip.antiAlias,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 420),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            color: Colors.white,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
             child: Column(
@@ -1616,8 +1632,9 @@ class JobCardMobile extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  ));
+}
 }
 
 class _ActionButton extends StatelessWidget {
