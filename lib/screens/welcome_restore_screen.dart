@@ -471,18 +471,12 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const FlutterLogo(size: 14),
-                  const SizedBox(width: 8),
-                  Text(
-                    'v0.2.3 • Developed by Rishad',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.65),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+              Text(
+                'v0.2.3 • Developed by Rishad',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.65),
+                  fontSize: 12,
+                ),
               ),
               InkWell(
                 onTap: _showSyncHelpDialog,

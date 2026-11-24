@@ -37,6 +37,180 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   bool _isUpdateWindowMinimized = false;
   String _updateStatusText = "Checking for updates...";
   bool _isChecking = false;
+  bool _isConnectingDrive = false;
+
+  Future<void> _handleConnectDrive() async {
+    setState(() => _isConnectingDrive = true);
+    try {
+      final success = await GoogleDriveService.instance.signIn();
+      if (mounted) {
+        setState(() => _isConnectingDrive = false);
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Connected to Google Drive: ${GoogleDriveService.instance.email ?? 'Success'}"),
+              backgroundColor: Colors.green[700],
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Google Sign-In was cancelled or could not be completed."),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isConnectingDrive = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Connection error: $e"),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showQuickCloudDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.cloud_sync_rounded, color: Color(0xFF1A237E)),
+            SizedBox(width: 10),
+            Text("Google Drive Sync", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Account: ${GoogleDriveService.instance.email ?? 'Connected'}",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "Sync your jobs, billing and worker records with Google Drive:",
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  _triggerDriveBackup();
+                },
+                icon: const Icon(Icons.cloud_upload_rounded, size: 18),
+                label: const Text("BACKUP DATABASE TO DRIVE"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  _triggerDriveRestore();
+                },
+                icon: const Icon(Icons.cloud_download_rounded, size: 18),
+                label: const Text("RESTORE FROM ANDROID CLOUD"),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _primaryColor,
+                  side: BorderSide(color: _primaryColor.withOpacity(0.4)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ref.read(navIndexProvider.notifier).state = 4;
+            },
+            child: const Text("Open Full Settings"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Close"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _triggerDriveBackup() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Uploading backup to Google Drive..."), duration: Duration(seconds: 1)),
+    );
+    final id = await GoogleDriveService.instance.uploadDatabase();
+    if (mounted) {
+      if (id != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: const Text("Backup uploaded successfully!"), backgroundColor: Colors.green[700]),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Backup failed. Check internet."), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _triggerDriveRestore() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text("Restore Backup?"),
+        content: const Text("This will replace current local data with your latest Google Drive backup."),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(c, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange[800], foregroundColor: Colors.white),
+            child: const Text("Restore Now"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Restoring database from Google Drive..."), duration: Duration(seconds: 2)),
+    );
+    final success = await GoogleDriveService.instance.restoreLatestBackup();
+    if (mounted) {
+      if (success) {
+        ref.invalidate(activeJobsProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: const Text("Data restored successfully!"), backgroundColor: Colors.green[700]),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Restore failed or no backup found in 'MICRO BACKUP'."), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -326,7 +500,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       // Active View Canvas
                       Expanded(
                         child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 250),
+                          duration: const Duration(milliseconds: 220),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          transitionBuilder: _buildPageTransition,
                           child: KeyedSubtree(
                             key: ValueKey<int>(navIndex),
                             child: pages[navIndex],
@@ -348,12 +525,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Scaffold(
       body: Stack(children: [
         AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
-          transitionBuilder: (child, animation) {
-            return FadeTransition(opacity: animation, child: child);
-          },
+          duration: const Duration(milliseconds: 220),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: _buildPageTransition,
           child: KeyedSubtree(
             key: ValueKey<int>(navIndex),
             child: pages[navIndex],
@@ -536,27 +711,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
           // 4. Bottom Google Drive Cloud Sync Status Widget
           _buildSidebarCloudWidget(),
-
-          // 5. Powered by Flutter Badge
-          Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const FlutterLogo(size: 13),
-                const SizedBox(width: 6),
-                Text(
-                  "Built with Flutter",
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.45),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -664,28 +818,69 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
-            height: 28,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                // Navigate to settings view
-                ref.read(navIndexProvider.notifier).state = 4;
-              },
-              icon: const Icon(Icons.sync, size: 14),
-              label: Text(
-                isSignedIn ? "Manage Sync" : "Connect Drive",
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: BorderSide(color: Colors.white.withOpacity(0.3)),
-                padding: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
+            height: 30,
+            child: _isConnectingDrive
+                ? const Center(
+                    child: SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                  )
+                : OutlinedButton.icon(
+                    onPressed: () {
+                      if (!isSignedIn) {
+                        _handleConnectDrive();
+                      } else {
+                        _showQuickCloudDialog();
+                      }
+                    },
+                    icon: Icon(
+                      isSignedIn ? Icons.cloud_done_rounded : Icons.login_rounded,
+                      size: 14,
+                    ),
+                    label: Text(
+                      isSignedIn ? "Cloud Actions" : "Connect Drive",
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      backgroundColor: isSignedIn ? Colors.white.withOpacity(0.08) : const Color(0xFFFF6D00),
+                      side: BorderSide(
+                        color: isSignedIn ? Colors.white.withOpacity(0.3) : const Color(0xFFFF6D00),
+                      ),
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPageTransition(Widget child, Animation<double> animation) {
+    final offsetAnim = Tween<Offset>(
+      begin: const Offset(0.02, 0.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+    ));
+    final fadeAnim = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+    );
+    return FadeTransition(
+      opacity: fadeAnim,
+      child: SlideTransition(
+        position: offsetAnim,
+        child: child,
       ),
     );
   }
@@ -748,7 +943,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             children: [
               // Google Drive Cloud Sync quick pill
               InkWell(
-                onTap: () => ref.read(navIndexProvider.notifier).state = 4,
+                onTap: () {
+                  if (GoogleDriveService.instance.isSignedIn) {
+                    _showQuickCloudDialog();
+                  } else {
+                    _handleConnectDrive();
+                  }
+                },
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

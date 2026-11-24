@@ -198,8 +198,6 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                               fontSize: 12,
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          const FlutterLogo(size: 14),
                         ],
                       ),
                     ),

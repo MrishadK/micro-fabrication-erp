@@ -285,16 +285,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
                 ),
               ),
               const SizedBox(height: 40),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const FlutterLogo(size: 14),
-                  const SizedBox(width: 6),
-                  Text(
-                    "Micro Fabrication Suite",
-                    style: TextStyle(color: Colors.grey[500], fontSize: 11),
-                  ),
-                ],
+              Text(
+                "Micro Fabrication Suite",
+                style: TextStyle(color: Colors.grey[500], fontSize: 11),
               ),
             ],
           ),
