@@ -11,6 +11,7 @@ import 'package:restart_app/restart_app.dart'
 
 // 🔥 PROJECT IMPORTS 🔥
 import '../services/google_drive_service.dart';
+import '../services/startup/startup_result.dart';
 import '../widgets/receipt_form.dart';
 import '../widgets/nav_bar.dart';
 import '../providers.dart';
@@ -21,7 +22,8 @@ import 'settings_view.dart';
 import 'wages_view.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
-  const DashboardScreen({super.key});
+  final StartupResult? startupResult;
+  const DashboardScreen({super.key, this.startupResult});
 
   @override
   ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
@@ -29,13 +31,13 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final Color _primaryColor = const Color(0xFF1A237E);
+  bool _showStartupBanner = false;
   // Only create ShorebirdUpdater on mobile platforms
   late final ShorebirdUpdater? _updater = (Platform.isAndroid || Platform.isIOS)
       ? ShorebirdUpdater()
       : null;
 
   bool _showUpdateWindow = false;
-  bool _isUpdateWindowMinimized = false;
   String _updateStatusText = "Checking for updates...";
   bool _isChecking = false;
   bool _isConnectingDrive = false;
@@ -276,7 +278,105 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.startupResult != null &&
+        widget.startupResult!.hasInAppNotification) {
+      _showStartupBanner = true;
+    }
     _initDashboard();
+  }
+
+  Widget _buildStartupBanner() {
+    if (!_showStartupBanner || widget.startupResult == null) {
+      return const SizedBox.shrink();
+    }
+    final notif = widget.startupResult!.inAppNotificationMessage!;
+    final type = widget.startupResult!.inAppNotificationType;
+
+    Color bg;
+    Color border;
+    Color text;
+    IconData icon;
+
+    if (type == 'warning') {
+      bg = const Color(0xFFFFFBEB); // Amber 50
+      border = const Color(0xFFFDE68A);
+      text = const Color(0xFF92400E);
+      icon = Icons.cloud_off_rounded;
+    } else if (type == 'info') {
+      bg = const Color(0xFFEFF6FF); // Blue 50
+      border = const Color(0xFFBFDBFE);
+      text = const Color(0xFF1E40AF);
+      icon = Icons.wifi_off_rounded;
+    } else {
+      bg = const Color(0xFFF0FDF4); // Green 50
+      border = const Color(0xFFBBF7D0);
+      text = const Color(0xFF166534);
+      icon = Icons.cloud_done_rounded;
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: text),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              notif,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: text,
+              ),
+            ),
+          ),
+          if (type == 'warning') ...[
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: () {
+                setState(() => _showStartupBanner = false);
+                ref.read(navIndexProvider.notifier).state = 4; // Settings view
+              },
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                foregroundColor: text,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  side: BorderSide(color: border),
+                ),
+              ),
+              child: const Text(
+                "Open Settings",
+                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+          const SizedBox(width: 6),
+          IconButton(
+            onPressed: () => setState(() => _showStartupBanner = false),
+            icon: Icon(Icons.close_rounded, size: 16, color: text),
+            visualDensity: VisualDensity.compact,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            tooltip: "Dismiss",
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _initDashboard() async {
@@ -558,6 +658,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     children: [
                       // Desktop Top Header Bar
                       _buildDesktopHeader(navIndex),
+                      // Non-intrusive startup notification banner
+                      _buildStartupBanner(),
                       // Active View Canvas
                       Expanded(
                         child: AnimatedSwitcher(
@@ -586,15 +688,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            transitionBuilder: _buildPageTransition,
-            child: KeyedSubtree(
-              key: ValueKey<int>(navIndex),
-              child: pages[navIndex],
-            ),
+          Column(
+            children: [
+              _buildStartupBanner(),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: _buildPageTransition,
+                  child: KeyedSubtree(
+                    key: ValueKey<int>(navIndex),
+                    child: pages[navIndex],
+                  ),
+                ),
+              ),
+            ],
           ),
           _buildUpdateStatusOverlay(),
         ],

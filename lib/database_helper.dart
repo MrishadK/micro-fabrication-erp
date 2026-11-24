@@ -1076,4 +1076,72 @@ class DatabaseHelper {
     linkedWork.sort((a, b) => b['date'].compareTo(a['date']));
     return linkedWork;
   }
+
+  /// Verifies SQLite database file integrity using PRAGMA integrity_check.
+  Future<Map<String, dynamic>> checkIntegrity() async {
+    try {
+      final db = await database;
+      final result = await db.rawQuery('PRAGMA integrity_check');
+      bool isOk = false;
+      String message = 'Unknown check result';
+      if (result.isNotEmpty) {
+        final val = result.first.values.first.toString().toLowerCase();
+        isOk = (val == 'ok');
+        message = result.first.values.first.toString();
+      }
+      return {
+        'ok': isOk,
+        'message': message,
+      };
+    } catch (e) {
+      return {
+        'ok': false,
+        'message': e.toString(),
+      };
+    }
+  }
+
+  /// Verifies database schema version and required table existence.
+  Future<Map<String, dynamic>> verifySchemaAndTables() async {
+    try {
+      final db = await database;
+      final versionResult = await db.rawQuery('PRAGMA user_version');
+      final version = versionResult.isNotEmpty
+          ? (versionResult.first.values.first as int? ?? 0)
+          : 0;
+
+      final tablesResult = await db.rawQuery(
+        "SELECT name FROM sqlite_master WHERE type='table'",
+      );
+      final tableNames =
+          tablesResult.map((r) => r['name']?.toString() ?? '').toSet();
+
+      const requiredTables = [
+        'jobs',
+        'deliveries',
+        'payments',
+        'drafts',
+        'workers',
+        'worker_attendance',
+        'worker_payments',
+        'worker_payment_history',
+      ];
+
+      final missing =
+          requiredTables.where((t) => !tableNames.contains(t)).toList();
+      return {
+        'ok': missing.isEmpty,
+        'version': version,
+        'missingTables': missing,
+        'tableCount': tableNames.length,
+      };
+    } catch (e) {
+      return {
+        'ok': false,
+        'version': 0,
+        'missingTables': <String>[],
+        'error': e.toString(),
+      };
+    }
+  }
 }

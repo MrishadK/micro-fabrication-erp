@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:window_manager/legacy.dart';
 
 //NEW: Imports for the lock screen
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,9 +11,28 @@ import 'package:local_auth/local_auth.dart';
 
 import 'screens/dashboard_screen.dart';
 import 'screens/welcome_restore_screen.dart';
+import 'screens/splash/splash_screen.dart';
+import 'services/startup/startup_result.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Desktop Window Management: Frameless 900x506 splash window on Windows
+  if (Platform.isWindows) {
+    await windowManager.ensureInitialized();
+    const windowOptions = WindowOptions(
+      size: Size(900, 506),
+      center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.hidden,
+    );
+    await windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.setResizable(false);
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
 
   ErrorWidget.builder = (FlutterErrorDetails details) {
     bool isDebug = false;
@@ -75,8 +95,60 @@ void main() {
   runApp(const ProviderScope(child: FabApp()));
 }
 
-class FabApp extends StatelessWidget {
+class FabApp extends StatefulWidget {
   const FabApp({super.key});
+
+  @override
+  State<FabApp> createState() => _FabAppState();
+}
+
+class _FabAppState extends State<FabApp> with WindowListener {
+  @override
+  void initState() {
+    super.initState();
+    if (Platform.isWindows) {
+      windowManager.addListener(this);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (Platform.isWindows) {
+      windowManager.removeListener(this);
+    }
+    super.dispose();
+  }
+
+  @override
+  void onWindowResize() async {
+    if (Platform.isWindows) {
+      final isMax = await windowManager.isMaximized();
+      if (!isMax) {
+        final size = await windowManager.getSize();
+        if (size.width > 950 && size.height > 550) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setDouble('window_width', size.width);
+          await prefs.setDouble('window_height', size.height);
+        }
+      }
+    }
+  }
+
+  @override
+  void onWindowMaximize() async {
+    if (Platform.isWindows) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('window_is_maximized', true);
+    }
+  }
+
+  @override
+  void onWindowUnmaximize() async {
+    if (Platform.isWindows) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('window_is_maximized', false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -137,9 +209,69 @@ class FabApp extends StatelessWidget {
           ),
         ),
       ),
-      // 🔥 FIX: Replaced DashboardScreen with AuthWrapper
-      home: const AuthWrapper(),
+      // On Windows: Start with WindowsSplashScreen. On mobile: AuthWrapper (biometrics).
+      home: Platform.isWindows ? const WindowsAppRoot() : const AuthWrapper(),
     );
+  }
+}
+
+// ========================================================
+//   🔥 WINDOWS APPLICATION ROOT (Splash -> Workspace) 🔥
+// ========================================================
+class WindowsAppRoot extends StatefulWidget {
+  const WindowsAppRoot({super.key});
+
+  @override
+  State<WindowsAppRoot> createState() => _WindowsAppRootState();
+}
+
+class _WindowsAppRootState extends State<WindowsAppRoot> {
+  bool _isInitializing = true;
+  StartupResult? _startupResult;
+  bool _showWelcome = false;
+
+  Future<void> _handleStartupComplete(StartupResult result) async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasCompletedSetup = prefs.getBool('has_completed_setup') ?? false;
+
+    // Restore user window preferences or standard desktop workspace defaults
+    final bool isMaximized = prefs.getBool('window_is_maximized') ?? false;
+    final double savedWidth = prefs.getDouble('window_width') ?? 1280;
+    final double savedHeight = prefs.getDouble('window_height') ?? 720;
+
+    // Switch from frameless splash to standard application window
+    await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+    await windowManager.setResizable(true);
+    await windowManager.setSize(Size(savedWidth, savedHeight));
+    await windowManager.center();
+    if (isMaximized) {
+      await windowManager.maximize();
+    }
+
+    if (mounted) {
+      setState(() {
+        _startupResult = result;
+        _isInitializing = false;
+        _showWelcome = !hasCompletedSetup;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isInitializing) {
+      return WindowsSplashScreen(
+        onInitializationComplete: _handleStartupComplete,
+      );
+    }
+
+    if (_showWelcome) {
+      return WelcomeRestoreScreen(
+        onComplete: () => setState(() => _showWelcome = false),
+      );
+    }
+
+    return DashboardScreen(startupResult: _startupResult);
   }
 }
 

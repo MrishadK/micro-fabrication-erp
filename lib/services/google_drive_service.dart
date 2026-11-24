@@ -383,7 +383,7 @@ class GoogleDriveService {
     var driveFile = drive.File();
     driveFile.name =
         "backup_${DateTime.now().toIso8601String().replaceAll(':', '-')}.db";
-    driveFile.parents = [folderId!];
+    driveFile.parents = [folderId];
 
     // Upload
     final media = drive.Media(dbFile.openRead(), dbFile.lengthSync());
@@ -621,5 +621,162 @@ class GoogleDriveService {
   </script>
 </body>
 </html>''';
+  }
+
+  /// Checks active internet connection by pinging Google DNS / domains
+  Future<bool> checkInternetConnection() async {
+    try {
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 3));
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+    } catch (_) {
+      try {
+        final result = await InternetAddress.lookup('8.8.8.8')
+            .timeout(const Duration(seconds: 2));
+        return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
+      } catch (_) {
+        return false;
+      }
+    }
+  }
+
+  /// Verifies Google Drive connectivity and session validity without opening browser login.
+  Future<Map<String, dynamic>> checkDriveConnectivity() async {
+    final hasInternet = await checkInternetConnection();
+    if (!hasInternet) {
+      return {
+        'connected': false,
+        'reason': 'Failed: No internet connection',
+        'isOffline': true,
+      };
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    if (isDesktop) {
+      final refreshToken = prefs.getString('desktop_gdrive_refresh_token');
+      if (refreshToken == null || refreshToken.isEmpty) {
+        return {
+          'connected': false,
+          'reason': 'Failed: Google not logged in',
+          'isOffline': false,
+        };
+      }
+
+      // Stored token exists, attempt silent refresh
+      try {
+        final success =
+            await signInSilently().timeout(const Duration(seconds: 5));
+        if (!success || _desktopAuthClient == null) {
+          return {
+            'connected': false,
+            'reason': 'Failed: Google session expired',
+            'isOffline': false,
+          };
+        }
+
+        // Verify API access
+        final driveApi = drive.DriveApi(_desktopAuthClient!);
+        await driveApi.about
+            .get($fields: 'user')
+            .timeout(const Duration(seconds: 4));
+        return {
+          'connected': true,
+          'email': email ?? _cachedEmail ?? 'Google Drive Connected',
+          'reason': null,
+          'isOffline': false,
+        };
+      } on SocketException catch (_) {
+        return {
+          'connected': false,
+          'reason': 'Failed: No internet connection',
+          'isOffline': true,
+        };
+      } on drive.DetailedApiRequestError catch (apiErr) {
+        if (apiErr.status == 401 || apiErr.status == 403) {
+          return {
+            'connected': false,
+            'reason': 'Failed: Google Drive access denied',
+            'isOffline': false,
+          };
+        }
+        return {
+          'connected': false,
+          'reason': 'Failed: Unable to connect to Google Drive',
+          'isOffline': false,
+        };
+      } catch (e) {
+        final errStr = e.toString().toLowerCase();
+        if (errStr.contains('timeout')) {
+          return {
+            'connected': false,
+            'reason': 'Failed: Connection timed out',
+            'isOffline': false,
+          };
+        }
+        return {
+          'connected': false,
+          'reason': 'Failed: Unable to connect to Google Drive',
+          'isOffline': false,
+        };
+      }
+    } else {
+      // Mobile
+      try {
+        final account = await _googleSignIn
+            .signInSilently()
+            .timeout(const Duration(seconds: 4));
+        if (account == null) {
+          return {
+            'connected': false,
+            'reason': 'Failed: Google not logged in',
+            'isOffline': false,
+          };
+        }
+        return {
+          'connected': true,
+          'email': account.email,
+          'reason': null,
+          'isOffline': false,
+        };
+      } catch (e) {
+        return {
+          'connected': false,
+          'reason': 'Failed: Unable to connect to Google Drive',
+          'isOffline': false,
+        };
+      }
+    }
+  }
+
+  /// Retrieves metadata of the latest remote backup in MICRO BACKUP
+  Future<Map<String, dynamic>?> getLatestBackupMetadata() async {
+    try {
+      final client = await _getAuthenticatedClient();
+      if (client == null) return null;
+
+      final driveApi = drive.DriveApi(client);
+      final folderId = await _getFolderId(driveApi, _folderName);
+      if (folderId == null) return null;
+
+      final fileList = await driveApi.files.list(
+        q: "'$folderId' in parents and trashed = false",
+        orderBy: "createdTime desc",
+        pageSize: 1,
+        $fields: "files(id, name, createdTime, size, modifiedTime)",
+      );
+
+      if (fileList.files == null || fileList.files!.isEmpty) return null;
+      final f = fileList.files!.first;
+      return {
+        'id': f.id,
+        'name': f.name,
+        'createdTime': f.createdTime,
+        'modifiedTime': f.modifiedTime,
+        'size': f.size,
+      };
+    } catch (e) {
+      debugPrint("getLatestBackupMetadata error: $e");
+      return null;
+    }
   }
 }
