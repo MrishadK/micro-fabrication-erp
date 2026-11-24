@@ -1,0 +1,54 @@
+name: micro
+description: "A new Flutter project."
+publish_to: 'Github'
+version: 0.2.3+6
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.4.0
+  sqflite_common_ffi: ^2.3.0 # Required for Windows SQL
+  sqflite: ^2.3.0
+  path_provider: ^2.1.1
+  path: ^1.8.3
+  intl: ^0.18.1
+  google_fonts: ^6.3.2
+  pdf: ^3.11.3
+  printing: ^5.14.2
+  sqflite_common_ffi_web: 0.4.5+4
+  data_table_2: ^2.7.2
+  url_launcher: ^6.3.2
+  google_sign_in: ^6.2.1
+  googleapis: ^13.1.0
+  googleapis_auth: ^1.4.1
+  http: ^1.2.0
+  extension_google_sign_in_as_googleapis_auth: ^2.0.12
+  shared_preferences: ^2.5.3
+  share_plus: ^12.0.1
+  excel: ^4.0.6
+  file_picker: ^10.3.10
+  flutter_launcher_icons: ^0.14.4
+  fl_chart: ^1.1.0
+  shorebird_code_push: ^2.0.5
+  restart_app: ^1.5.2
+  package_info_plus: ^9.0.0
+  local_auth: ^2.3.0
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/Logo.png
+    - assets/bill.png
+    - shorebird.yaml
+    
+flutter_icons:
+  android: true
+  image_path: assets/Logo.png
