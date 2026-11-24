@@ -192,9 +192,9 @@ Win32Window::MessageHandler(HWND hwnd,
       HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
       UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
       double scale_factor = dpi / 96.0;
-      // Enforce minimum window size for workstation layout (1024x680 DPI-aware)
-      info->ptMinTrackSize.x = Scale(1024, scale_factor);
-      info->ptMinTrackSize.y = Scale(680, scale_factor);
+      // Allow splash window size (900x506 DPI-aware) as min track size
+      info->ptMinTrackSize.x = Scale(900, scale_factor);
+      info->ptMinTrackSize.y = Scale(506, scale_factor);
       return 0;
     }
 

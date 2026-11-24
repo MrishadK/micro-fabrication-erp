@@ -419,11 +419,36 @@ class StartupController extends ChangeNotifier {
       ),
     );
 
-    // Presentation duration: randomized between 1000 and 2000 milliseconds
-    final int delayMs = enablePresentationDelay ? (1000 + _random.nextInt(1000)) : 0;
-    final delayFuture = delayMs > 0
-        ? Future.delayed(Duration(milliseconds: delayMs))
-        : Future.value();
+    final double startProgress = _state.progress;
+    final double progressSpan = targetProgress - startProgress;
+    final double crawlTarget = startProgress + progressSpan * 0.88;
+
+    // Presentation duration: randomized between 1000 and 1800 milliseconds
+    final int delayMs = enablePresentationDelay ? (1000 + _random.nextInt(800)) : 0;
+    const int tickIntervalMs = 25; // 40fps fluid progress updates
+
+    Timer? progressTimer;
+    final int startTimeMs = DateTime.now().millisecondsSinceEpoch;
+
+    if (delayMs > 0 && progressSpan > 0) {
+      progressTimer = Timer.periodic(const Duration(milliseconds: tickIntervalMs), (timer) {
+        if (_isDisposed) {
+          timer.cancel();
+          return;
+        }
+        final elapsed = DateTime.now().millisecondsSinceEpoch - startTimeMs;
+        final fraction = (elapsed / delayMs).clamp(0.0, 1.0);
+        // Smooth ease-out cubic curve so it starts lively and gently settles near crawlTarget
+        final curvedFraction = 1.0 - pow(1.0 - fraction, 2.4);
+        final currentP = startProgress + (crawlTarget - startProgress) * curvedFraction;
+
+        _updateState(_state.copyWith(progress: currentP.toDouble()));
+
+        if (fraction >= 1.0) {
+          timer.cancel();
+        }
+      });
+    }
 
     // Run the actual operation asynchronously
     Map<String, dynamic> opResult = {};
@@ -433,8 +458,16 @@ class StartupController extends ChangeNotifier {
       opResult = {'ok': false, 'status': StartupStepStatus.failed, 'message': e.toString()};
     }
 
-    // Wait for the minimum presentation duration so the user can easily follow along
-    await delayFuture;
+    // Wait for the minimum presentation duration
+    if (delayMs > 0) {
+      final elapsed = DateTime.now().millisecondsSinceEpoch - startTimeMs;
+      final remaining = delayMs - elapsed;
+      if (remaining > 0) {
+        await Future.delayed(Duration(milliseconds: remaining));
+      }
+    }
+
+    progressTimer?.cancel();
 
     // Determine final status of this step
     final StartupStepStatus finalStatus = (opResult['status'] is StartupStepStatus)
@@ -461,13 +494,31 @@ class StartupController extends ChangeNotifier {
       onFailure(opResult);
     }
 
-    _updateState(
-      _state.copyWith(
-        steps: updatedSteps,
-        progress: targetProgress,
-        clearCurrentRunning: true,
-      ),
-    );
+    // Smoothly finish the remaining distance to targetProgress
+    if (enablePresentationDelay && progressSpan > 0) {
+      final double currentP = _state.progress;
+      const int glideSteps = 6;
+      for (int i = 1; i <= glideSteps; i++) {
+        if (_isDisposed) break;
+        await Future.delayed(const Duration(milliseconds: 25));
+        final double p = currentP + (targetProgress - currentP) * (i / glideSteps);
+        _updateState(
+          _state.copyWith(
+            steps: updatedSteps,
+            progress: p.clamp(0.0, 1.0),
+            clearCurrentRunning: i == glideSteps,
+          ),
+        );
+      }
+    } else {
+      _updateState(
+        _state.copyWith(
+          steps: updatedSteps,
+          progress: targetProgress,
+          clearCurrentRunning: true,
+        ),
+      );
+    }
   }
 
   void _markStepSkipped(StartupStep step, String reason) {

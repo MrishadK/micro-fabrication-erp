@@ -78,52 +78,31 @@ class _WindowsSplashScreenState extends State<WindowsSplashScreen>
     final state = _controller.state;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Center(
-        child: Container(
-          width: 900,
-          height: 506,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 36,
-                spreadRadius: 4,
-                offset: const Offset(0, 12),
-              ),
-            ],
-            border: Border.all(
+      backgroundColor: Colors.white,
+      body: SizedBox.expand(
+        child: Row(
+          children: [
+            // ----------------------------------------------------
+            // LEFT PANEL: BRANDING & BLUE-TINTED FABRICATION SCENE
+            // ----------------------------------------------------
+            _buildLeftBrandingPanel(),
+
+            // SUBTLE VERTICAL DIVIDER
+            Container(
+              width: 1,
+              height: double.infinity,
               color: const Color(0xFFE2E8F0),
-              width: 1.0,
             ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Row(
-            children: [
-              // ----------------------------------------------------
-              // LEFT PANEL: BRANDING & BLUE-TINTED FABRICATION SCENE
-              // ----------------------------------------------------
-              _buildLeftBrandingPanel(),
 
-              // SUBTLE VERTICAL DIVIDER
-              Container(
-                width: 1,
-                height: double.infinity,
-                color: const Color(0xFFE2E8F0),
-              ),
-
-              // ----------------------------------------------------
-              // RIGHT PANEL: INITIALIZATION DIAGNOSTICS OR RECOVERY
-              // ----------------------------------------------------
-              Expanded(
-                child: state.isCriticalError
-                    ? _buildCriticalRecoveryView(state)
-                    : _buildInitializationPanel(state),
-              ),
-            ],
-          ),
+            // ----------------------------------------------------
+            // RIGHT PANEL: INITIALIZATION DIAGNOSTICS OR RECOVERY
+            // ----------------------------------------------------
+            Expanded(
+              child: state.isCriticalError
+                  ? _buildCriticalRecoveryView(state)
+                  : _buildInitializationPanel(state),
+            ),
+          ],
         ),
       ),
     );
@@ -391,6 +370,7 @@ class _WindowsSplashScreenState extends State<WindowsSplashScreen>
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF2563EB),
+                  fontFeatures: [FontFeature.tabularFigures()],
                 ),
               ),
             ],
@@ -398,18 +378,11 @@ class _WindowsSplashScreenState extends State<WindowsSplashScreen>
           const SizedBox(height: 6),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
-            child: TweenAnimationBuilder<double>(
-              tween: Tween<double>(begin: 0.0, end: state.progress),
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.easeOutCubic,
-              builder: (context, value, _) {
-                return LinearProgressIndicator(
-                  value: value,
-                  minHeight: 6,
-                  backgroundColor: const Color(0xFFE2E8F0),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
-                );
-              },
+            child: LinearProgressIndicator(
+              value: state.progress.clamp(0.0, 1.0),
+              minHeight: 6,
+              backgroundColor: const Color(0xFFE2E8F0),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
             ),
           ),
         ],

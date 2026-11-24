@@ -21,15 +21,20 @@ void main() async {
   // Desktop Window Management: Frameless 900x506 splash window on Windows
   if (Platform.isWindows) {
     await windowManager.ensureInitialized();
+    await windowManager.unmaximize();
     const windowOptions = WindowOptions(
       size: Size(900, 506),
       center: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       skipTaskbar: false,
       titleBarStyle: TitleBarStyle.hidden,
     );
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.unmaximize();
+      await windowManager.setAsFrameless();
       await windowManager.setResizable(false);
+      await windowManager.setSize(const Size(900, 506));
+      await windowManager.center();
       await windowManager.show();
       await windowManager.focus();
     });
