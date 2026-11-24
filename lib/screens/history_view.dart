@@ -1389,10 +1389,99 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
-  Future<void> _executePrintOrShare({
+  void _openPdfPreview({
     required BuildContext context,
     required bool isDetailed,
-    required bool isPrint,
+  }) {
+    HapticFeedback.lightImpact();
+    final sanitizedName = (currentJob['client_name'] ?? 'Client').toString().replaceAll(
+      RegExp(r'[^\w\s]+'),
+      '',
+    ).trim();
+    final billNo = (currentJob['bill_no'] != null && currentJob['bill_no'].toString().trim().isNotEmpty)
+        ? currentJob['bill_no'].toString()
+        : (currentJob['id']?.toString() ?? '1');
+    final String prefix = isDetailed ? "Estimate" : "JobCard";
+    final String docName = "${prefix}_${billNo}_$sanitizedName";
+    final String title = isDetailed
+        ? "Bill Preview (#$billNo - ${currentJob['client_name'] ?? 'Client'})"
+        : "Job Card Preview (#$billNo - ${currentJob['client_name'] ?? 'Client'})";
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final screenSize = MediaQuery.of(ctx).size;
+        final dialogWidth = (screenSize.width * 0.9).clamp(320.0, 950.0);
+        final dialogHeight = (screenSize.height * 0.9).clamp(400.0, 850.0);
+
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: Colors.white,
+          clipBehavior: Clip.antiAlias,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          child: SizedBox(
+            width: dialogWidth,
+            height: dialogHeight,
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF1E293B),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
+                          const SizedBox(width: 10),
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
+                        splashRadius: 20,
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: PdfPreview(
+                    build: (format) async => await _pdf.generateReceiptBytes(
+                      currentJob,
+                      isDetailed: isDetailed,
+                    ),
+                    pdfFileName: '$docName.pdf',
+                    allowPrinting: true,
+                    allowSharing: true,
+                    canChangePageFormat: false,
+                    canChangeOrientation: false,
+                    canDebug: false,
+                    loadingWidget: const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _executeSharePdf({
+    required BuildContext context,
+    required bool isDetailed,
   }) async {
     HapticFeedback.lightImpact();
     try {
@@ -1406,21 +1495,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       ).trim();
       final billNo = (currentJob['bill_no'] != null && currentJob['bill_no'].toString().trim().isNotEmpty)
           ? currentJob['bill_no'].toString()
-          : currentJob['id'].toString();
+          : (currentJob['id']?.toString() ?? '1');
       final String prefix = isDetailed ? "Estimate" : "JobCard";
       final String docName = "${prefix}_${billNo}_$sanitizedName";
 
-      if (isPrint) {
-        await Printing.layoutPdf(
-          onLayout: (format) async => pdfBytes,
-          name: docName,
-        );
-      } else {
-        await Printing.sharePdf(
-          bytes: pdfBytes,
-          filename: '$docName.pdf',
-        );
-      }
+      await Printing.sharePdf(
+        bytes: pdfBytes,
+        filename: '$docName.pdf',
+      );
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1546,10 +1628,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 Navigator.pop(ctx);
-                                _executePrintOrShare(
+                                _openPdfPreview(
                                   context: context,
                                   isDetailed: true,
-                                  isPrint: true,
                                 );
                               },
                               icon: const Icon(Icons.print_rounded, size: 16),
@@ -1573,10 +1654,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                             child: OutlinedButton.icon(
                               onPressed: () {
                                 Navigator.pop(ctx);
-                                _executePrintOrShare(
+                                _executeSharePdf(
                                   context: context,
                                   isDetailed: true,
-                                  isPrint: false,
                                 );
                               },
                               icon: const Icon(Icons.share_rounded, size: 16),
@@ -1656,10 +1736,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                             child: ElevatedButton.icon(
                               onPressed: () {
                                 Navigator.pop(ctx);
-                                _executePrintOrShare(
+                                _openPdfPreview(
                                   context: context,
                                   isDetailed: false,
-                                  isPrint: true,
                                 );
                               },
                               icon: const Icon(Icons.print_rounded, size: 16),
@@ -1683,10 +1762,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                             child: OutlinedButton.icon(
                               onPressed: () {
                                 Navigator.pop(ctx);
-                                _executePrintOrShare(
+                                _executeSharePdf(
                                   context: context,
                                   isDetailed: false,
-                                  isPrint: false,
                                 );
                               },
                               icon: const Icon(Icons.share_rounded, size: 16),
