@@ -337,68 +337,73 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
     final bool isWideScreen = screenSize.width >= 750;
 
     return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      clipBehavior: Clip.antiAlias,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       insetPadding: EdgeInsets.symmetric(
         horizontal: isWideScreen ? 32 : 16,
         vertical: 24,
       ),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 840,
-          maxHeight: screenSize.height * 0.88,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 1. Compact Header Bar
-            _buildDialogHeader(),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 840,
+            maxHeight: screenSize.height * 0.88,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 1. Compact Header Bar
+              _buildDialogHeader(),
 
-            // 2. Flexible Scrollable Form Body (Shrink-wraps without empty space!)
-            Flexible(
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Section A: Client & Order Basics
-                      _buildClientSection(),
-                      const SizedBox(height: 12),
+              // 2. Flexible Scrollable Form Body (Shrink-wraps without empty space!)
+              Flexible(
+                child: Container(
+                  color: Colors.white,
+                  child: Form(
+                    key: _formKey,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Section A: Client & Order Basics
+                          _buildClientSection(),
+                          const SizedBox(height: 12),
 
-                      // Section B: Notes / Work Scope
-                      _buildWorkDetailsSection(),
-                      const SizedBox(height: 14),
+                          // Section B: Notes / Work Scope
+                          _buildWorkDetailsSection(),
+                          const SizedBox(height: 14),
 
-                      // Section C: Dual-Column Materials & Products Grid
-                      if (isWideScreen)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Left Column: Materials Input
-                            Expanded(child: _buildMaterialsCard()),
-                            const SizedBox(width: 14),
-                            // Right Column: Products Output
-                            Expanded(child: _buildProductsCard()),
+                          // Section C: Dual-Column Materials & Products Grid
+                          if (isWideScreen)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Left Column: Materials Input
+                                Expanded(child: _buildMaterialsCard()),
+                                const SizedBox(width: 14),
+                                // Right Column: Products Output
+                                Expanded(child: _buildProductsCard()),
+                              ],
+                            )
+                          else ...[
+                            _buildMaterialsCard(),
+                            const SizedBox(height: 14),
+                            _buildProductsCard(),
                           ],
-                        )
-                      else ...[
-                        _buildMaterialsCard(),
-                        const SizedBox(height: 14),
-                        _buildProductsCard(),
-                      ],
-                    ],
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // 3. Compact Sticky Financials & Action Footer
-            _buildDialogFooter(),
-          ],
+              // 3. Compact Sticky Financials & Action Footer
+              _buildDialogFooter(),
+            ],
+          ),
         ),
       ),
     );
@@ -423,7 +428,7 @@ class _ReceiptFormState extends ConsumerState<ReceiptForm> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(6),
               child: Image.asset(
-                'assets/Logo.png',
+                'assets/app.png',
                 width: 22,
                 height: 22,
                 fit: BoxFit.contain,

@@ -184,7 +184,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(4),
                             child: Image.asset(
-                              'assets/Logo.png',
+                              'assets/app.png',
                               width: 18,
                               height: 18,
                               fit: BoxFit.contain,

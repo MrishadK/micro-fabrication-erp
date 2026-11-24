@@ -46,6 +46,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/Logo.png
+    - assets/app.png
     - assets/bill.png
     - shorebird.yaml
     

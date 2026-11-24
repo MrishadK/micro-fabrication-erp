@@ -230,7 +230,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset('assets/Logo.png', width: 72, height: 72),
+              Image.asset('assets/app.png', width: 72, height: 72),
               const SizedBox(height: 24),
               const CircularProgressIndicator(color: Color(0xFFFF6D00), strokeWidth: 2.5),
             ],
@@ -254,7 +254,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset('assets/Logo.png', width: 88, height: 88),
+              Image.asset('assets/app.png', width: 88, height: 88),
               const SizedBox(height: 20),
               const Text(
                 "Micro Locked",

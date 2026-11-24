@@ -414,21 +414,23 @@ class _EditJobDialogState extends State<EditJobDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       insetPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        width: 550,
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
-        ),
-        child: ScaffoldMessenger(
-          key: _scaffoldMessengerKey,
-          child: Scaffold(
-            backgroundColor: Colors.white,
-            body: Column(
-              children: [
-                _buildHeader(),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: 550,
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.9,
+          ),
+          child: ScaffoldMessenger(
+            key: _scaffoldMessengerKey,
+            child: Scaffold(
+              backgroundColor: Colors.white,
+              body: Column(
+                children: [
+                  _buildHeader(),
                 Expanded(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(24),
@@ -467,8 +469,9 @@ class _EditJobDialogState extends State<EditJobDialog> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildItemsEditor() {
     return Column(

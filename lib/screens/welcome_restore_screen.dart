@@ -642,7 +642,7 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: Image.asset(
-                    'assets/Logo.png',
+                    'assets/app.png',
                     width: 44,
                     height: 44,
                     fit: BoxFit.contain,
@@ -844,7 +844,7 @@ class _WelcomeRestoreScreenState extends State<WelcomeRestoreScreen>
           ),
           child: ClipOval(
             child: Image.asset(
-              'assets/Logo.png',
+              'assets/app.png',
               width: 64,
               height: 64,
               fit: BoxFit.contain,
