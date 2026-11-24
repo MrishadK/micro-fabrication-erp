@@ -921,48 +921,85 @@ class _WagesViewState extends State<WagesView> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (c) => WorkerDetailScreen(
-                  workerData: worker,
-                  onSave: (updated) async {
-                    try {
-                      final listData = <Map<String, dynamic>>[];
-                      (updated['attendance_data'] as Map).forEach((k, v) {
-                        listData.add({
-                          'date': k,
-                          'fraction': v['fraction'],
-                          'ot': v['ot'],
-                          'pieces': v['pieces'],
-                          'tasks': v['tasks'],
-                          'mode': v['mode'] ?? worker['wage_type'],
-                          // IMMUTABILITY GUARANTEE: Use only the value already stamped
-                          // inside _attendanceMap. Never fall back to the live profile
-                          // rate — that would re-introduce the same-day leak.
-                          'locked_daily_wage':
-                              (v['locked_daily_wage'] as num?)?.toDouble() ??
-                              0.0,
-                        });
-                      });
-                      await DatabaseHelper.instance.updateWorkerAttendance(
-                        updated['id'],
-                        listData,
-                      );
-                      _loadData();
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Failed to save attendance: $e'),
-                        ),
-                      );
-                    }
-                  },
-                  onEditProfile: () =>
-                      _showWorkerDialog(context, worker, index: index),
+            Future<void> handleSave(Map<String, dynamic> updated) async {
+              try {
+                final listData = <Map<String, dynamic>>[];
+                (updated['attendance_data'] as Map).forEach((k, v) {
+                  listData.add({
+                    'date': k,
+                    'fraction': v['fraction'],
+                    'ot': v['ot'],
+                    'pieces': v['pieces'],
+                    'tasks': v['tasks'],
+                    'mode': v['mode'] ?? worker['wage_type'],
+                    // IMMUTABILITY GUARANTEE: Use only the value already stamped
+                    // inside _attendanceMap. Never fall back to the live profile
+                    // rate — that would re-introduce the same-day leak.
+                    'locked_daily_wage':
+                        (v['locked_daily_wage'] as num?)?.toDouble() ?? 0.0,
+                  });
+                });
+                await DatabaseHelper.instance.updateWorkerAttendance(
+                  updated['id'],
+                  listData,
+                );
+                _loadData();
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to save attendance: $e'),
+                    ),
+                  );
+                }
+              }
+            }
+
+            final isDesktop = MediaQuery.of(context).size.width >= 750;
+            if (isDesktop) {
+              await showDialog(
+                context: context,
+                barrierDismissible: true,
+                builder: (c) => Dialog(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  insetPadding: EdgeInsets.symmetric(
+                    horizontal:
+                        MediaQuery.of(context).size.width > 900 ? 40 : 16,
+                    vertical: 24,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: 880,
+                      maxHeight: MediaQuery.of(context).size.height * 0.92,
+                    ),
+                    child: WorkerDetailScreen(
+                      workerData: worker,
+                      isDialog: true,
+                      onSave: handleSave,
+                      onEditProfile: () =>
+                          _showWorkerDialog(context, worker, index: index),
+                    ),
+                  ),
                 ),
-              ),
-            );
+              );
+            } else {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (c) => WorkerDetailScreen(
+                    workerData: worker,
+                    isDialog: false,
+                    onSave: handleSave,
+                    onEditProfile: () =>
+                        _showWorkerDialog(context, worker, index: index),
+                  ),
+                ),
+              );
+            }
             _loadData();
           },
           child: Padding(
@@ -1911,12 +1948,14 @@ class WorkerDetailScreen extends StatefulWidget {
   final Map<String, dynamic> workerData;
   final Function(Map<String, dynamic>) onSave;
   final Future<Map<String, dynamic>?> Function() onEditProfile;
+  final bool isDialog;
 
   const WorkerDetailScreen({
     super.key,
     required this.workerData,
     required this.onSave,
     required this.onEditProfile,
+    this.isDialog = false,
   });
 
   @override
@@ -2047,6 +2086,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      constraints: const BoxConstraints(maxWidth: 600),
       backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
         builder: (_, setS) => Padding(
@@ -2529,6 +2569,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      constraints: const BoxConstraints(maxWidth: 600),
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         return StatefulBuilder(
@@ -3386,6 +3427,15 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(
+            widget.isDialog
+                ? Icons.close_rounded
+                : Icons.arrow_back_rounded,
+          ),
+          tooltip: widget.isDialog ? 'Close' : 'Back',
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(_localWorkerData['name'] ?? 'Worker'),
         backgroundColor: _primaryColor,
         foregroundColor: Colors.white,
@@ -3659,31 +3709,62 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
           ],
         ),
         child: SafeArea(
-          child: SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: ElevatedButton(
-              onPressed: _saveAndPop,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primaryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          child: Row(
+            children: [
+              if (widget.isDialog) ...[
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    side: BorderSide(color: Colors.grey[300]!),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Discard',
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(
+                child: SizedBox(
+                  height: 55,
+                  child: ElevatedButton(
+                    onPressed: _saveAndPop,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'SAVE CHANGES',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              child: const Text(
-                'SAVE CHANGES',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
+            ],
           ),
         ),
       ),
-      body: SingleChildScrollView(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 880),
+          child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -3973,7 +4054,9 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _buildDayHeaders() {

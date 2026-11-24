@@ -481,12 +481,38 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => JobDetailScreen(job: job, ref: ref),
-              ),
-            );
+            final isDesktop = MediaQuery.of(context).size.width >= 750;
+            if (isDesktop) {
+              await showDialog(
+                context: context,
+                builder: (context) => Dialog(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  insetPadding: EdgeInsets.symmetric(
+                    horizontal:
+                        MediaQuery.of(context).size.width > 900 ? 40 : 16,
+                    vertical: 24,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: 900,
+                      maxHeight: MediaQuery.of(context).size.height * 0.92,
+                    ),
+                    child: JobDetailScreen(job: job, ref: ref, isDialog: true),
+                  ),
+                ),
+              );
+            } else {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => JobDetailScreen(job: job, ref: ref),
+                ),
+              );
+            }
             ref.read(dbRefreshTriggerProvider.notifier).state++;
           },
           child: Padding(
@@ -679,8 +705,14 @@ class _HistoryViewState extends ConsumerState<HistoryView> {
 class JobDetailScreen extends StatefulWidget {
   final Map<String, dynamic> job;
   final WidgetRef ref;
+  final bool isDialog;
 
-  const JobDetailScreen({super.key, required this.job, required this.ref});
+  const JobDetailScreen({
+    super.key,
+    required this.job,
+    required this.ref,
+    this.isDialog = false,
+  });
 
   @override
   State<JobDetailScreen> createState() => _JobDetailScreenState();
@@ -1874,6 +1906,15 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       child: Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(
+              widget.isDialog
+                  ? Icons.close_rounded
+                  : Icons.arrow_back_rounded,
+            ),
+            tooltip: widget.isDialog ? 'Close' : 'Back',
+            onPressed: () => Navigator.pop(context),
+          ),
           title: Text("Bill #$displayBillNo"),
           backgroundColor: const Color(0xFF1A237E),
           foregroundColor: Colors.white,
@@ -1891,9 +1932,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ],
         ),
 
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 900),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildInfoCard(
@@ -2352,7 +2396,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
   List<Widget> _buildLinkedProductionView(
