@@ -4337,7 +4337,8 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
           ),
         ),
       ),
-      body: Center(
+      body: Align(
+        alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 880),
           child: SingleChildScrollView(
@@ -4648,147 +4649,152 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
   }
 
   Widget _buildPeriodNavRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left_rounded, size: 22),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: () => _changePeriod(-1),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left_rounded, size: 22),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  onPressed: () => _changePeriod(-1),
+                ),
+                Text(
+                  _periodLabel,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right_rounded, size: 22),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                  onPressed: () => _changePeriod(1),
+                ),
+              ],
             ),
-            Text(
-              _periodLabel,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-            ),
-            IconButton(
-              icon: const Icon(Icons.chevron_right_rounded, size: 22),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: () => _changePeriod(1),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.all(2),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          if (!_isWeeklyView) {
+                            setState(() => _isWeeklyView = true);
+                            _loadPayment();
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _isWeeklyView
+                                ? Colors.white
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(6),
+                            boxShadow: _isWeeklyView
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.06),
+                                      blurRadius: 4,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Text(
+                            'Week',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: _isWeeklyView
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: _isWeeklyView
+                                  ? _primaryColor
+                                  : Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          if (_isWeeklyView) {
+                            setState(() => _isWeeklyView = false);
+                            _loadPayment();
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: !_isWeeklyView
+                                ? Colors.white
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(6),
+                            boxShadow: !_isWeeklyView
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.06),
+                                      blurRadius: 4,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Text(
+                            'Month',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: !_isWeeklyView
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: !_isWeeklyView
+                                  ? _primaryColor
+                                  : Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: _openPayslipPreview,
+                  icon: const Icon(Icons.receipt_long_rounded, size: 15),
+                  label: const Text(
+                    'Payslip',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    side: BorderSide(color: _primaryColor.withOpacity(0.3)),
+                    foregroundColor: _primaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.all(2),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      if (!_isWeeklyView) {
-                        setState(() => _isWeeklyView = true);
-                        _loadPayment();
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _isWeeklyView
-                            ? Colors.white
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(6),
-                        boxShadow: _isWeeklyView
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.06),
-                                  blurRadius: 4,
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Text(
-                        'Week',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: _isWeeklyView
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: _isWeeklyView
-                              ? _primaryColor
-                              : Colors.grey[700],
-                        ),
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      if (_isWeeklyView) {
-                        setState(() => _isWeeklyView = false);
-                        _loadPayment();
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: !_isWeeklyView
-                            ? Colors.white
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(6),
-                        boxShadow: !_isWeeklyView
-                            ? [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.06),
-                                  blurRadius: 4,
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Text(
-                        'Month',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: !_isWeeklyView
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: !_isWeeklyView
-                              ? _primaryColor
-                              : Colors.grey[700],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            OutlinedButton.icon(
-              onPressed: _openPayslipPreview,
-              icon: const Icon(Icons.receipt_long_rounded, size: 15),
-              label: const Text(
-                'Payslip',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                side: BorderSide(color: _primaryColor.withOpacity(0.3)),
-                foregroundColor: _primaryColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+      ),
     );
   }
 
@@ -4829,9 +4835,9 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 7,
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          childAspectRatio: 1.85,
+          mainAxisSpacing: 6,
+          crossAxisSpacing: 6,
+          childAspectRatio: 1.75,
         ),
         itemCount: 7,
         itemBuilder: (context, index) =>
@@ -4855,9 +4861,9 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 7,
-          mainAxisSpacing: 6,
-          crossAxisSpacing: 6,
-          childAspectRatio: 1.45,
+          mainAxisSpacing: 5,
+          crossAxisSpacing: 5,
+          childAspectRatio: 1.5,
         ),
         itemCount: daysInMonth + firstDayOffset,
         itemBuilder: (context, index) {
@@ -4872,7 +4878,12 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen> {
         },
       );
     }
-    return Column(children: [_buildDayHeaders(), grid]);
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Column(children: [_buildDayHeaders(), grid]),
+      ),
+    );
   }
 
   Widget _buildDayCell(DateTime date) {
