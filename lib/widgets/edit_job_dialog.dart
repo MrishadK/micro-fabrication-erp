@@ -268,128 +268,347 @@ class _EditJobDialogState extends State<EditJobDialog> {
           );
         }
 
+        final productName = _outputItems[productIndex]['name']?.toString();
+        final displayProduct = (productName != null && productName.trim().isNotEmpty)
+            ? productName.trim()
+            : "Product #${productIndex + 1}";
+
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            return AlertDialog(
-              title: const Text("Materials Used"),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: validMaterials.length,
-                  itemBuilder: (ctx, i) {
-                    final mat = validMaterials[i];
-                    final String matId = mat['id'];
-                    final int totalQty = mat['qty'] as int;
-
-                    // Calculate how much of this material is used by OTHER products
-                    int otherUsed = 0;
-                    for (int p = 0; p < _outputItems.length; p++) {
-                      if (p == productIndex) continue;
-                      for (var link
-                          in (_outputItems[p]['linked_materials'] ?? [])) {
-                        if (link['id'] == matId)
-                          otherUsed += (link['used_qty'] as int? ?? 0);
-                      }
-                    }
-                    final int maxAvailable = totalQty - otherUsed;
-
-                    int linkIndex = tempLinks.indexWhere(
-                      (l) => l['id'] == matId,
-                    );
-                    bool isSelected = linkIndex != -1;
-
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: Checkbox(
-                        value: isSelected,
-                        activeColor: primaryColor,
-                        // Prevent checking if no material is available
-                        onChanged: (maxAvailable <= 0 && !isSelected)
-                            ? null
-                            : (val) {
-                                setStateDialog(() {
-                                  if (val == true) {
-                                    tempLinks.add({'id': matId, 'used_qty': 1});
-                                    textCtrls[matId] = TextEditingController(
-                                      text: "1",
-                                    );
-                                  } else {
-                                    tempLinks.removeWhere(
-                                      (l) => l['id'] == matId,
-                                    );
-                                    textCtrls.remove(matId);
-                                  }
-                                });
-                              },
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.16),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
                       ),
-                      title: Text(
-                        mat['name'],
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(
-                        "Available: $maxAvailable / Total: $totalQty",
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                      trailing: isSelected
-                          ? SizedBox(
-                              width: 65,
-                              child: TextField(
-                                controller: textCtrls[matId],
-                                keyboardType: TextInputType.number,
-                                textAlign: TextAlign.center,
-                                decoration: const InputDecoration(
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    vertical: 8,
-                                    horizontal: 4,
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Modern Header
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [primaryColor, primaryColor.withValues(alpha: 0.9)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.18),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.link_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "Link Input Materials",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                      letterSpacing: 0.2,
+                                    ),
                                   ),
-                                  border: OutlineInputBorder(),
-                                ),
-                                onChanged: (val) {
-                                  int parsed = int.tryParse(val) ?? 0;
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    "Allocate materials used to make \"$displayProduct\"",
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFFCBD5E1),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.close_rounded, color: Colors.white70, size: 20),
+                              tooltip: "Close",
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                      ),
 
-                                  // --- CAP TO MAX AVAILABLE ---
-                                  if (parsed > maxAvailable) {
-                                    parsed = maxAvailable;
-                                    textCtrls[matId]!.text = parsed.toString();
-                                    // Move cursor to the end
-                                    textCtrls[matId]!
-                                        .selection = TextSelection.fromPosition(
-                                      TextPosition(
-                                        offset: textCtrls[matId]!.text.length,
-                                      ),
-                                    );
+                      // Material Cards List
+                      Flexible(
+                        child: validMaterials.isEmpty
+                            ? const Padding(
+                                padding: EdgeInsets.all(32),
+                                child: Text("No input materials available.", style: TextStyle(color: Colors.grey)),
+                              )
+                            : ListView.separated(
+                                shrinkWrap: true,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                itemCount: validMaterials.length,
+                                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                                itemBuilder: (ctx, i) {
+                                  final mat = validMaterials[i];
+                                  final String matId = mat['id'];
+                                  final int totalQty = mat['qty'] as int;
+
+                                  int otherUsed = 0;
+                                  for (int p = 0; p < _outputItems.length; p++) {
+                                    if (p == productIndex) continue;
+                                    for (var link in (_outputItems[p]['linked_materials'] ?? [])) {
+                                      if (link['id'] == matId) {
+                                        otherUsed += (link['used_qty'] as int? ?? 0);
+                                      }
+                                    }
                                   }
+                                  final int maxAvailable = totalQty - otherUsed;
 
-                                  // Update the backend data
-                                  setStateDialog(() {
-                                    tempLinks[linkIndex]['used_qty'] = parsed;
-                                  });
+                                  int linkIndex = tempLinks.indexWhere((l) => l['id'] == matId);
+                                  bool isSelected = linkIndex != -1;
+                                  int currentUsed = isSelected ? (tempLinks[linkIndex]['used_qty'] as int? ?? 1) : 0;
+
+                                  Color cardBg = isSelected ? const Color(0xFFEFF6FF) : const Color(0xFFF8FAFC);
+                                  Color cardBorder = isSelected ? const Color(0xFF3B82F6) : const Color(0xFFE2E8F0);
+
+                                  return AnimatedContainer(
+                                    duration: const Duration(milliseconds: 180),
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: cardBg,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: cardBorder, width: isSelected ? 1.5 : 1.0),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Checkbox(
+                                          value: isSelected,
+                                          activeColor: primaryColor,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                          onChanged: (maxAvailable <= 0 && !isSelected)
+                                              ? null
+                                              : (val) {
+                                                  setStateDialog(() {
+                                                    if (val == true) {
+                                                      tempLinks.add({'id': matId, 'used_qty': 1});
+                                                      textCtrls[matId] = TextEditingController(text: "1");
+                                                    } else {
+                                                      tempLinks.removeWhere((l) => l['id'] == matId);
+                                                      textCtrls.remove(matId);
+                                                    }
+                                                  });
+                                                },
+                                        ),
+                                        const SizedBox(width: 4),
+
+                                        // Material Details
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                mat['name'],
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 13.5,
+                                                  color: isSelected ? const Color(0xFF1E293B) : const Color(0xFF334155),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 3),
+                                              Row(
+                                                children: [
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: maxAvailable > 0
+                                                          ? const Color(0xFFDCFCE7)
+                                                          : const Color(0xFFFEE2E2),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                    ),
+                                                    child: Text(
+                                                      maxAvailable > 0 ? "Avail: $maxAvailable" : "Depleted",
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: maxAvailable > 0
+                                                            ? const Color(0xFF166534)
+                                                            : const Color(0xFF991B1B),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    "Total: $totalQty",
+                                                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+
+                                        // Intuitive Stepper Controls
+                                        if (isSelected)
+                                          Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(color: const Color(0xFFCBD5E1)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                InkWell(
+                                                  onTap: () {
+                                                    if (currentUsed > 1) {
+                                                      int nextVal = currentUsed - 1;
+                                                      textCtrls[matId]?.text = nextVal.toString();
+                                                      setStateDialog(() {
+                                                        tempLinks[linkIndex]['used_qty'] = nextVal;
+                                                      });
+                                                    }
+                                                  },
+                                                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(7)),
+                                                  child: const Padding(
+                                                    padding: EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+                                                    child: Icon(Icons.remove_rounded, size: 14, color: Color(0xFF475569)),
+                                                  ),
+                                                ),
+                                                SizedBox(
+                                                  width: 44,
+                                                  height: 28,
+                                                  child: TextField(
+                                                    controller: textCtrls[matId],
+                                                    keyboardType: TextInputType.number,
+                                                    textAlign: TextAlign.center,
+                                                    style: const TextStyle(
+                                                      fontSize: 12.5,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Color(0xFF0F172A),
+                                                    ),
+                                                    decoration: const InputDecoration(
+                                                      isDense: true,
+                                                      contentPadding: EdgeInsets.zero,
+                                                      border: InputBorder.none,
+                                                    ),
+                                                    onChanged: (val) {
+                                                      int parsed = int.tryParse(val) ?? 0;
+                                                      if (parsed > maxAvailable) {
+                                                        parsed = maxAvailable;
+                                                        textCtrls[matId]!.text = parsed.toString();
+                                                        textCtrls[matId]!.selection = TextSelection.fromPosition(
+                                                          TextPosition(offset: textCtrls[matId]!.text.length),
+                                                        );
+                                                      }
+                                                      setStateDialog(() {
+                                                        tempLinks[linkIndex]['used_qty'] = parsed;
+                                                      });
+                                                    },
+                                                  ),
+                                                ),
+                                                InkWell(
+                                                  onTap: () {
+                                                    if (currentUsed < maxAvailable) {
+                                                      int nextVal = currentUsed + 1;
+                                                      textCtrls[matId]?.text = nextVal.toString();
+                                                      setStateDialog(() {
+                                                        tempLinks[linkIndex]['used_qty'] = nextVal;
+                                                      });
+                                                    }
+                                                  },
+                                                  borderRadius: const BorderRadius.horizontal(right: Radius.circular(7)),
+                                                  child: const Padding(
+                                                    padding: EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+                                                    child: Icon(Icons.add_rounded, size: 14, color: Color(0xFF475569)),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  );
                                 },
                               ),
-                            )
-                          : null,
-                    );
-                  },
+                      ),
+
+                      // Sticky Action Footer
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF8FAFC),
+                          border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "${tempLinks.length} material(s) linked",
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                            ),
+                            Row(
+                              children: [
+                                OutlinedButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color(0xFF475569),
+                                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                  child: const Text("Cancel"),
+                                ),
+                                const SizedBox(width: 10),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    setState(() {
+                                      _outputItems[productIndex]['linked_materials'] = tempLinks;
+                                    });
+                                    Navigator.pop(context);
+                                  },
+                                  icon: const Icon(Icons.check_rounded, size: 16),
+                                  label: const Text("Save Links"),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: primaryColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    elevation: 0,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancel"),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      _outputItems[productIndex]['linked_materials'] =
-                          tempLinks;
-                    });
-                    Navigator.pop(context);
-                  },
-                  child: const Text("Save"),
-                ),
-              ],
             );
           },
         );
