@@ -5,9 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:micro/database_helper.dart';
 import '../providers.dart';
-import 'dart:io';
-import 'package:share_plus/share_plus.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:printing/printing.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/pdf_service.dart';
 
 class HistoryView extends ConsumerStatefulWidget {
@@ -1125,87 +1124,590 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
-  Future<void> _executeShare(BuildContext context, bool isDetailed) async {
+  String _cleanPhone(dynamic raw) {
+    if (raw == null) return "";
+    String s = raw.toString().trim();
+    if (s.endsWith('.0')) {
+      s = s.substring(0, s.length - 2);
+    }
+    return s;
+  }
+
+  void _showCallDialog(BuildContext context) {
+    HapticFeedback.lightImpact();
+    final clientName = (currentJob['client_name'] as String?)?.trim() ?? 'Client';
+    final clientPlace = (currentJob['client_place'] as String?)?.trim() ?? '';
+    final phone = _cleanPhone(currentJob['client_phone']);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        clipBehavior: Clip.antiAlias,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFDCFCE7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.phone_in_talk_rounded,
+                        color: Color(0xFF16A34A),
+                        size: 22,
+                      ),
+                    ),
+                    const Text(
+                      "Client Contact",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 22),
+                      color: const Color(0xFF64748B),
+                      splashRadius: 20,
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  clientName.isNotEmpty ? clientName : "Unnamed Client",
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                    letterSpacing: -0.3,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                if (clientPlace.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.location_on_rounded,
+                        size: 16,
+                        color: Color(0xFF64748B),
+                      ),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          clientPlace,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF475569),
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 20),
+                if (phone.isNotEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 20,
+                      horizontal: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: const Color(0xFFE2E8F0),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          "PHONE NUMBER",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SelectableText(
+                          phone,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF0F172A),
+                            letterSpacing: 1.5,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: phone));
+                            HapticFeedback.lightImpact();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Phone number copied to clipboard!"),
+                                backgroundColor: Color(0xFF1E293B),
+                                behavior: SnackBarBehavior.floating,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.copy_rounded, size: 18),
+                          label: const Text(
+                            "Copy",
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF334155),
+                            side: const BorderSide(color: Color(0xFFCBD5E1)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            HapticFeedback.lightImpact();
+                            final uri = Uri.parse("tel:$phone");
+                            try {
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
+                              } else {
+                                await Clipboard.setData(ClipboardData(text: phone));
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "Number copied! (No dialer app available on this device)",
+                                      ),
+                                      backgroundColor: Color(0xFF1E293B),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                }
+                              }
+                            } catch (_) {
+                              await Clipboard.setData(ClipboardData(text: phone));
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Number copied to clipboard!"),
+                                    backgroundColor: Color(0xFF1E293B),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.call_rounded, size: 18),
+                          label: const Text(
+                            "Dial",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF16A34A),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFFCA5A5)),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(
+                          Icons.phone_disabled_rounded,
+                          color: Color(0xFFDC2626),
+                          size: 22,
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            "No phone number saved for this client.",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF991B1B),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _executePrintOrShare({
+    required BuildContext context,
+    required bool isDetailed,
+    required bool isPrint,
+  }) async {
+    HapticFeedback.lightImpact();
     try {
       final pdfBytes = await _pdf.generateReceiptBytes(
         currentJob,
         isDetailed: isDetailed,
       );
-      final dir = await getTemporaryDirectory();
-      final sanitizedName = (currentJob['client_name'] ?? 'Client').replaceAll(
+      final sanitizedName = (currentJob['client_name'] ?? 'Client').toString().replaceAll(
         RegExp(r'[^\w\s]+'),
         '',
-      );
-      String prefix = isDetailed ? "Estimate" : "JobCard";
-      final file = File(
-        '${dir.path}/${prefix}_${currentJob['bill_no']}_$sanitizedName.pdf',
-      );
+      ).trim();
+      final billNo = (currentJob['bill_no'] != null && currentJob['bill_no'].toString().trim().isNotEmpty)
+          ? currentJob['bill_no'].toString()
+          : currentJob['id'].toString();
+      final String prefix = isDetailed ? "Estimate" : "JobCard";
+      final String docName = "${prefix}_${billNo}_$sanitizedName";
 
-      await file.writeAsBytes(pdfBytes);
-      await Share.shareXFiles([
-        XFile(file.path),
-      ], text: 'Bill for ${currentJob['client_name']}');
+      if (isPrint) {
+        await Printing.layoutPdf(
+          onLayout: (format) async => pdfBytes,
+          name: docName,
+        );
+      } else {
+        await Printing.sharePdf(
+          bytes: pdfBytes,
+          filename: '$docName.pdf',
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
-  void _shareBill(BuildContext context) {
-    showModalBottomSheet(
+  void _printOrShareBill(BuildContext context) {
+    HapticFeedback.lightImpact();
+    showDialog(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                "Share Options",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    shape: BoxShape.circle,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        clipBehavior: Clip.antiAlias,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEEF2FF),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.print_rounded,
+                        color: Color(0xFF4F46E5),
+                        size: 22,
+                      ),
+                    ),
+                    const Text(
+                      "Print & Share",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 22),
+                      color: const Color(0xFF64748B),
+                      splashRadius: 20,
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Choose document format to print or share for ${currentJob['client_name'] ?? 'Client'}:",
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
                   ),
-                  child: const Icon(Icons.receipt_long, color: Colors.blue),
                 ),
-                title: const Text("Detailed Bill"),
-                subtitle: const Text(
-                  "Includes payment history and remaining materials",
-                ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _executeShare(context, true);
-                },
-              ),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
+                const SizedBox(height: 16),
+
+                // Option 1: Detailed Bill
+                Container(
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.orange[50],
-                    shape: BoxShape.circle,
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
-                  child: const Icon(Icons.assignment, color: Colors.orange),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.receipt_long_rounded,
+                              color: Color(0xFF2563EB),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Detailed Bill",
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  "Includes payment records & leftover materials",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _executePrintOrShare(
+                                  context: context,
+                                  isDetailed: true,
+                                  isPrint: true,
+                                );
+                              },
+                              icon: const Icon(Icons.print_rounded, size: 16),
+                              label: const Text(
+                                "Print / Preview",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2563EB),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 11),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _executePrintOrShare(
+                                  context: context,
+                                  isDetailed: true,
+                                  isPrint: false,
+                                );
+                              },
+                              icon: const Icon(Icons.share_rounded, size: 16),
+                              label: const Text("Share PDF"),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF1E293B),
+                                side: const BorderSide(color: Color(0xFFCBD5E1)),
+                                padding: const EdgeInsets.symmetric(vertical: 11),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                title: const Text("Simple Job Card"),
-                subtitle: const Text(
-                  "Basic job details only (Hide payments/leftovers)",
+                const SizedBox(height: 14),
+
+                // Option 2: Simple Job Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF7ED),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.assignment_rounded,
+                              color: Color(0xFFEA580C),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Simple Job Card",
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF0F172A),
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  "Workshop ticket (hides costs, payments & leftovers)",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _executePrintOrShare(
+                                  context: context,
+                                  isDetailed: false,
+                                  isPrint: true,
+                                );
+                              },
+                              icon: const Icon(Icons.print_rounded, size: 16),
+                              label: const Text(
+                                "Print / Preview",
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFEA580C),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(vertical: 11),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _executePrintOrShare(
+                                  context: context,
+                                  isDetailed: false,
+                                  isPrint: false,
+                                );
+                              },
+                              icon: const Icon(Icons.share_rounded, size: 16),
+                              label: const Text("Share PDF"),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFF1E293B),
+                                side: const BorderSide(color: Color(0xFFCBD5E1)),
+                                padding: const EdgeInsets.symmetric(vertical: 11),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _executeShare(context, false);
-                },
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1321,12 +1823,26 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 content: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      currentJob['client_name'] ?? "Unknown",
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            currentJob['client_name'] ?? "Unknown",
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => _showCallDialog(context),
+                          icon: const Icon(
+                            Icons.phone_in_talk_rounded,
+                            color: Color(0xFF16A34A),
+                          ),
+                          tooltip: "Call / Contact Client",
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 15),
                     Row(
@@ -1739,12 +2255,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 child: ElevatedButton.icon(
                   onPressed: () {
                     HapticFeedback.lightImpact();
-                    _shareBill(context);
+                    _printOrShareBill(context);
                   },
-                  icon: const Icon(Icons.share),
-                  label: const Text("Share Bill"),
+                  icon: const Icon(Icons.print_rounded),
+                  label: const Text("Print / Share Bill"),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purple,
+                    backgroundColor: const Color(0xFF4F46E5),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
