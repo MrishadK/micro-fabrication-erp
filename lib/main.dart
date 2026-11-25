@@ -1,9 +1,12 @@
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:window_manager/legacy.dart';
+import 'package:window_manager/window_manager.dart' as native_wm;
 
 // NEW: Imports for secure 6-digit PIN app lock
 import 'package:shared_preferences/shared_preferences.dart';
@@ -244,13 +247,26 @@ class _WindowsAppRootState extends State<WindowsAppRoot> {
 
     // Restore user window preferences or standard desktop workspace defaults
     final bool isMaximized = prefs.getBool('window_is_maximized') ?? false;
-    final double savedWidth = prefs.getDouble('window_width') ?? 1280;
-    final double savedHeight = prefs.getDouble('window_height') ?? 720;
+    double targetWidth = prefs.getDouble('window_width') ?? 1220;
+    double targetHeight = prefs.getDouble('window_height') ?? 700;
 
-    // Switch from frameless splash to standard application window
+    // Clamp window bounds safely for Windows 10/11 laptops (e.g. 1366x768 or 150% DPI scaling)
+    final views = PlatformDispatcher.instance.views;
+    if (views.isNotEmpty) {
+      final display = views.first.display;
+      final dpr = views.first.devicePixelRatio > 0 ? views.first.devicePixelRatio : 1.0;
+      final maxLogicalW = math.max(820.0, (display.size.width / dpr) - 24);
+      final maxLogicalH = math.max(540.0, (display.size.height / dpr) - 56);
+      targetWidth = targetWidth.clamp(math.min(960.0, maxLogicalW), maxLogicalW);
+      targetHeight = targetHeight.clamp(math.min(560.0, maxLogicalH), maxLogicalH);
+    }
+
+    // Switch cleanly from frameless splash to standard application window
+    native_wm.WindowManager.instance.getCurrent()?.setFrameless(false);
     await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+    await windowManager.setMinimumSize(const Size(900, 560));
     await windowManager.setResizable(true);
-    await windowManager.setSize(Size(savedWidth, savedHeight));
+    await windowManager.setSize(Size(targetWidth, targetHeight));
     await windowManager.center();
     if (isMaximized) {
       await windowManager.maximize();

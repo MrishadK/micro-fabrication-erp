@@ -45,6 +45,8 @@ WizardStyle=modern
 WizardSizePercent=100
 ArchitecturesInstallIn64BitMode=x64compatible
 ArchitecturesAllowed=x64compatible
+; Support Windows 10 (10.0) and Windows 11
+MinVersion=10.0
 
 ; Require Administrator privileges for Program Files write access and file replacement
 PrivilegesRequired=admin

@@ -568,6 +568,16 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   Future<void> _handleExport(BuildContext context) async {
     setState(() => _isLoading = true);
     try {
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        final savedPath = await GoogleDriveServiceDesktop.instance.exportDatabase();
+        if (mounted) {
+          if (savedPath != null) {
+            _msg("Backup saved to $savedPath", isError: false);
+          }
+        }
+        return;
+      }
+
       final path = await DatabaseHelper.instance.getPublicDataPath();
       final file = File(p.join(path, 'fab_shop_pro.db'));
       if (await file.exists()) {

@@ -106,3 +106,22 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+# Bundle Visual C++ system runtime DLLs (vcruntime140.dll, msvcp140.dll, etc.)
+# so the app runs out-of-the-box on clean Windows 10/11 PCs without VC++ Redist installed.
+file(TO_CMAKE_PATH "$ENV{SystemRoot}" _win_root)
+foreach(_crt_dll vcruntime140.dll vcruntime140_1.dll msvcp140.dll msvcp140_1.dll msvcp140_2.dll concrt140.dll)
+  if(EXISTS "${_win_root}/System32/${_crt_dll}")
+    install(FILES "${_win_root}/System32/${_crt_dll}"
+      DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+      CONFIGURATIONS Profile;Release
+      COMPONENT Runtime)
+  endif()
+endforeach()
+
+# Bundle sqlite3.dll next to micro.exe as required by sqflite_common_ffi in Release mode.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libs/sqlite3.dll")
+  install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/libs/sqlite3.dll"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime)
+endif()

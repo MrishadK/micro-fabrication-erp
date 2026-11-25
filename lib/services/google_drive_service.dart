@@ -228,8 +228,8 @@ class GoogleDriveService {
         final expiryStr = prefs.getString('desktop_gdrive_token_expiry');
 
         if (refreshToken != null && accessTokenData != null) {
-          final expiry = DateTime.tryParse(expiryStr ?? '') ??
-              DateTime.now().add(const Duration(hours: 1));
+          final expiry = DateTime.tryParse(expiryStr ?? '')?.toUtc() ??
+              DateTime.now().toUtc().add(const Duration(hours: 1));
           final credentials = AccessCredentials(
             AccessToken('Bearer', accessTokenData, expiry),
             refreshToken,

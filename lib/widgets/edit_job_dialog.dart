@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import '../database_helper.dart';
 import 'dart:async';
+import 'scrollable_autocomplete_options.dart';
 
 class EditJobDialog extends StatefulWidget {
   final Map<String, dynamic> job;
@@ -778,52 +779,32 @@ class _EditJobDialogState extends State<EditJobDialog> {
                       (o) => o.toLowerCase().contains(v.text.toLowerCase()),
                     ),
               onSelected: (s) => setState(() => _inputItems[index]['name'] = s),
+              optionsViewOpenDirection: OptionsViewOpenDirection.mostSpace,
               optionsViewBuilder: (context, onSelected, options) {
-                return Align(
-                  alignment: Alignment.topLeft,
-                  child: Material(
-                    elevation: 6,
-                    color: Colors.white,
-                    clipBehavior: Clip.antiAlias,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: Colors.grey.shade200),
+                return ScrollableAutocompleteOptions<String>(
+                  options: options,
+                  onSelected: onSelected,
+                  preferredWidth: 280,
+                  maxHeight: 220,
+                  itemBuilder: (ctx, option) => Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
-                    child: Container(
-                      width: 280,
-                      constraints: const BoxConstraints(maxHeight: 220),
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        shrinkWrap: true,
-                        itemCount: options.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          final String option = options.elementAt(index);
-                          return InkWell(
-                            onTap: () => onSelected(option),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              child: Text(
-                                option,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+                    child: Text(
+                      option,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
                       ),
                     ),
                   ),
                 );
               },
               fieldViewBuilder: (ctx, ctrl, focus, submit) {
-                if (ctrl.text != _inputItems[index]['name']) {
-                  ctrl.text = _inputItems[index]['name'];
+                if (!focus.hasFocus && ctrl.text != (_inputItems[index]['name'] ?? '')) {
+                  ctrl.text = _inputItems[index]['name'] ?? '';
                 }
                 return TextFormField(
                   controller: ctrl,
@@ -914,52 +895,32 @@ class _EditJobDialogState extends State<EditJobDialog> {
                       }
                     });
                   },
+                  optionsViewOpenDirection: OptionsViewOpenDirection.mostSpace,
                   optionsViewBuilder: (context, onSelected, options) {
-                    return Align(
-                      alignment: Alignment.topLeft,
-                      child: Material(
-                        elevation: 6,
-                        color: Colors.white,
-                        clipBehavior: Clip.antiAlias,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: Colors.grey.shade200),
+                    return ScrollableAutocompleteOptions<String>(
+                      options: options,
+                      onSelected: onSelected,
+                      preferredWidth: 280,
+                      maxHeight: 220,
+                      itemBuilder: (ctx, option) => Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
                         ),
-                        child: Container(
-                          width: 280,
-                          constraints: const BoxConstraints(maxHeight: 220),
-                          child: ListView.builder(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            shrinkWrap: true,
-                            itemCount: options.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              final String option = options.elementAt(index);
-                              return InkWell(
-                                onTap: () => onSelected(option),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
-                                  child: Text(
-                                    option,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
+                        child: Text(
+                          option,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
                           ),
                         ),
                       ),
                     );
                   },
                   fieldViewBuilder: (ctx, ctrl, focus, submit) {
-                    if (ctrl.text != _outputItems[index]['name']) {
-                      ctrl.text = _outputItems[index]['name'];
+                    if (!focus.hasFocus && ctrl.text != (_outputItems[index]['name'] ?? '')) {
+                      ctrl.text = _outputItems[index]['name'] ?? '';
                     }
                     return TextFormField(
                       controller: ctrl,
